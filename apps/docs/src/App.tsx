@@ -3,20 +3,24 @@ import { parse } from '@adml/parser';
 import { ADMLEditorReact } from '@adml/editor';
 import './App.css';
 
-const initialValue = `// ADML - Article Data Markup Language
-// Try editing the markup below!
+const initialValue = `/*
+ADML - Article Data Markup Language
+Try editing the markup below!
+Features: syntax highlighting, autocomplete, auto-closing brackets
+*/
 
 title: Welcome to ADML
 date: 2026-02-12
 
-// Objects with bracket syntax
+// Objects with bracket syntax (try typing "key: {")
 author: {
   name: John Doe
   email: john@example.com
   role: Writer
 }
 
-// Arrays with bracket syntax
+/* Arrays with bracket syntax
+   Try typing "items: [" to see auto-closing! */
 tags: [
 javascript
 typescript
@@ -24,16 +28,14 @@ markup
 json
 ]
 
-// Numbers are automatically detected
+// Numbers and booleans are automatically detected
 port: 3000
 timeout: 30.5
 label: 34px
-
-// Booleans are automatically detected
 enabled: true
 debug: false
 
-// Objects with dot notation (numbers are parsed as numbers)
+// Objects with dot notation
 metadata.version: 1.0
 metadata.year: 2026
 metadata.status: draft
@@ -41,7 +43,8 @@ metadata.status: draft
 // Single-line text
 summary: ADML is a markup language inspired by ArchieML that compiles to JSON.
 
-// Multiline text using :: syntax
+/* Multiline text using :: syntax
+   Try typing "key::" to see the template! */
 description::
 ADML supports multiple data types:
 - Strings, numbers, and booleans
@@ -49,7 +52,7 @@ ADML supports multiple data types:
 - Objects with { } or dot notation
 - Arrays with [ ]
 - Automatic type detection
-- Comments with //
+- Single-line // and /* multiline */ comments
 
 Perfect for structured article data!
 ::

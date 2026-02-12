@@ -12,6 +12,38 @@ export interface ADMLResult {
 }
 
 /**
+ * Helper function to strip multiline comments from a line
+ */
+function stripMultilineComments(line: string, inComment: boolean): { line: string; inComment: boolean } {
+  let result = '';
+  let i = 0;
+  let currentlyInComment = inComment;
+
+  while (i < line.length) {
+    if (currentlyInComment) {
+      // Look for closing */
+      if (i < line.length - 1 && line[i] === '*' && line[i + 1] === '/') {
+        currentlyInComment = false;
+        i += 2; // Skip */
+        continue;
+      }
+      i++;
+    } else {
+      // Look for opening /*
+      if (i < line.length - 1 && line[i] === '/' && line[i + 1] === '*') {
+        currentlyInComment = true;
+        i += 2; // Skip /*
+        continue;
+      }
+      result += line[i];
+      i++;
+    }
+  }
+
+  return { line: result, inComment: currentlyInComment };
+}
+
+/**
  * Helper function to parse a value and convert to appropriate type
  */
 function parseValue(value: string): any {
@@ -34,20 +66,25 @@ function parseValue(value: string): any {
 /**
  * Helper function to parse array blocks
  */
-function parseArray(lines: string[], startIndex: number): { value: any[]; endIndex: number } {
+function parseArray(lines: string[], startIndex: number, inComment: boolean = false): { value: any[]; endIndex: number; inComment: boolean } {
   const arr: any[] = [];
   let i = startIndex;
+  let inMultilineComment = inComment;
 
   while (i < lines.length) {
     const line = lines[i];
-    const trimmed = line.trim();
+
+    // Strip multiline comments
+    const stripped = stripMultilineComments(line, inMultilineComment);
+    inMultilineComment = stripped.inComment;
+    const trimmed = stripped.line.trim();
 
     // Check for closing bracket
     if (trimmed === ']') {
-      return { value: arr, endIndex: i + 1 };
+      return { value: arr, endIndex: i + 1, inComment: inMultilineComment };
     }
 
-    // Skip empty lines and comments
+    // Skip empty lines and single-line comments
     if (!trimmed || trimmed.startsWith('//')) {
       i++;
       continue;
@@ -55,9 +92,10 @@ function parseArray(lines: string[], startIndex: number): { value: any[]; endInd
 
     // Check for nested array
     if (trimmed === '[') {
-      const nestedArray = parseArray(lines, i + 1);
+      const nestedArray = parseArray(lines, i + 1, inMultilineComment);
       arr.push(nestedArray.value);
       i = nestedArray.endIndex;
+      inMultilineComment = nestedArray.inComment;
       continue;
     }
 
@@ -66,7 +104,7 @@ function parseArray(lines: string[], startIndex: number): { value: any[]; endInd
     i++;
   }
 
-  return { value: arr, endIndex: i };
+  return { value: arr, endIndex: i, inComment: inMultilineComment };
 }
 
 /**
@@ -77,11 +115,17 @@ export function parse(input: string, options: ADMLParseOptions = {}): ADMLResult
   const lines = input.split('\n');
 
   let i = 0;
+  let inMultilineComment = false;
+
   while (i < lines.length) {
     const line = lines[i];
-    const trimmed = line.trim();
 
-    // Skip empty lines and comments
+    // Strip multiline comments
+    const stripped = stripMultilineComments(line, inMultilineComment);
+    inMultilineComment = stripped.inComment;
+    const trimmed = stripped.line.trim();
+
+    // Skip empty lines and single-line comments
     if (!trimmed || trimmed.startsWith('//')) {
       i++;
       continue;
@@ -105,7 +149,8 @@ export function parse(input: string, options: ADMLParseOptions = {}): ADMLResult
           break;
         }
 
-        multilineContent.push(contentLine);
+        // Trim leading and trailing spaces from each line
+        multilineContent.push(contentLine.trim());
         i++;
       }
 
@@ -116,10 +161,11 @@ export function parse(input: string, options: ADMLParseOptions = {}): ADMLResult
     const colonIndex = trimmed.indexOf(':');
     if (colonIndex > 0 && trimmed.endsWith('[')) {
       const key = trimmed.substring(0, colonIndex).trim();
-      const arr = parseArray(lines, i + 1);
+      const arr = parseArray(lines, i + 1, inMultilineComment);
 
       result[key] = arr.value;
       i = arr.endIndex;
+      inMultilineComment = arr.inComment;
 
       continue;
     }
@@ -134,7 +180,11 @@ export function parse(input: string, options: ADMLParseOptions = {}): ADMLResult
       // Collect properties until we find }
       while (i < lines.length) {
         const objLine = lines[i];
-        const objTrimmed = objLine.trim();
+
+        // Strip multiline comments
+        const objStripped = stripMultilineComments(objLine, inMultilineComment);
+        inMultilineComment = objStripped.inComment;
+        const objTrimmed = objStripped.line.trim();
 
         if (objTrimmed === '}') {
           // End of object block
@@ -143,9 +193,35 @@ export function parse(input: string, options: ADMLParseOptions = {}): ADMLResult
           break;
         }
 
-        // Skip empty lines and comments inside object
+        // Skip empty lines and single-line comments inside object
         if (!objTrimmed || objTrimmed.startsWith('//')) {
           i++;
+          continue;
+        }
+
+        // Check for multiline syntax inside object: propKey::
+        if (objTrimmed.endsWith('::')) {
+          const propKey = objTrimmed.substring(0, objTrimmed.length - 2).trim();
+          const multilineContent: string[] = [];
+
+          i++; // Move to next line after propKey::
+
+          // Collect lines until we find ::
+          while (i < lines.length) {
+            const contentLine = lines[i];
+
+            if (contentLine.trim() === '::') {
+              // End of multiline block
+              obj[propKey] = multilineContent.join('\n');
+              i++; // Move past the closing ::
+              break;
+            }
+
+            // Trim leading and trailing spaces from each line
+            multilineContent.push(contentLine.trim());
+            i++;
+          }
+
           continue;
         }
 
@@ -250,7 +326,16 @@ export function stringify(data: ADMLResult, options: ADMLParseOptions = {}): str
       // Object - use bracket syntax
       lines.push(`${key}: {`);
       for (const [propKey, propValue] of Object.entries(value)) {
-        if (typeof propValue === 'string' || typeof propValue === 'number' || typeof propValue === 'boolean') {
+        if (typeof propValue === 'string') {
+          // Check if string contains newlines - use multiline syntax
+          if (propValue.includes('\n')) {
+            lines.push(`  ${propKey}::`);
+            lines.push(propValue);
+            lines.push('::');
+          } else {
+            lines.push(`  ${propKey}: ${propValue}`);
+          }
+        } else if (typeof propValue === 'number' || typeof propValue === 'boolean') {
           lines.push(`  ${propKey}: ${propValue}`);
         } else {
           // Nested objects - fallback to JSON

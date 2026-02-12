@@ -5,8 +5,9 @@
 
 import { EditorState, Extension } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
-import { defaultKeymap } from '@codemirror/commands';
-import { markdown } from '@codemirror/lang-markdown';
+import { defaultKeymap, indentWithTab } from '@codemirror/commands';
+import { admlLanguage } from './lang-adml.js';
+import { autoCloseBrackets } from './auto-close.js';
 
 export interface ADMLEditorOptions {
   initialValue?: string;
@@ -23,8 +24,9 @@ export class ADMLEditor {
     this.onChange = options.onChange;
 
     const extensions = [
-      keymap.of(defaultKeymap),
-      markdown(),
+      autoCloseBrackets(), // MUST BE FIRST - Highest priority is set inside the extension
+      admlLanguage(),
+      keymap.of([...defaultKeymap, indentWithTab]),
       EditorView.lineWrapping,
       EditorView.updateListener.of((update) => {
         if (update.docChanged && this.onChange) {
@@ -66,4 +68,6 @@ export class ADMLEditor {
 
 export { EditorView, EditorState };
 export { ADMLEditorReact } from './react.js';
+export { admlLanguage } from './lang-adml.js';
+export { autoCloseBrackets } from './auto-close.js';
 export default ADMLEditor;

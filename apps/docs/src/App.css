@@ -64,6 +64,44 @@
   font-size: 14px;
 }
 
+/* CodeMirror ADML syntax highlighting */
+.editor :is(.cm-def, .tok-def, .ͼ1) {
+  color: #0077aa;
+  font-weight: 600;
+}
+
+.editor :is(.cm-operator, .tok-operator) {
+  color: #666;
+}
+
+.editor :is(.cm-atom, .tok-atom) {
+  color: #219;
+  font-weight: 600;
+}
+
+.editor :is(.cm-number, .tok-number) {
+  color: #164;
+}
+
+.editor :is(.cm-string, .tok-string) {
+  color: #a11;
+}
+
+.editor :is(.cm-comment, .tok-comment) {
+  color: #a50;
+  font-style: italic;
+}
+
+.editor :is(.cm-bracket, .tok-bracket) {
+  color: #905;
+  font-weight: bold;
+}
+
+.editor :is(.cm-keyword, .tok-keyword) {
+  color: #708;
+  font-weight: bold;
+}
+
 .output {
   flex: 1;
   margin: 0;

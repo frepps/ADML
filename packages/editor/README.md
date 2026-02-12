@@ -1,6 +1,16 @@
 # @adml/editor
 
-Web-based editor component for ADML (Article Data Markup Language).
+Web-based editor component for ADML (Article Data Markup Language) with syntax highlighting, autocomplete, and smart bracket handling.
+
+## Features
+
+✨ **Syntax Highlighting** - Colors for properties, values, comments, and brackets
+🎯 **Autocomplete** - Context-aware suggestions for keys and values
+🔧 **Auto-Closing Brackets** - Smart completion for `{`, `[`, and proper indentation
+⌨️ **Keyboard Shortcuts** - Tab indentation, Ctrl+Space autocomplete
+💡 **Smart Formatting** - Automatic indentation and structure
+
+See [FEATURES.md](./FEATURES.md) for detailed documentation.
 
 ## Installation
 

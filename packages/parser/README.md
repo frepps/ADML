@@ -74,13 +74,38 @@ value: false positive  // remains string
 ```
 
 ### Multiline values
-Use `::` to start and end multiline blocks:
+Use `::` to start and end multiline blocks. Leading and trailing whitespace on each line is automatically trimmed:
 ```
 description::
 Line 1
 Line 2
 Line 3
 ::
+```
+
+Indentation is stripped, so these are equivalent:
+```
+description::
+Line 1
+::
+
+description::
+  Line 1
+::
+```
+
+Both produce: `"description": "Line 1"`
+
+Multiline values also work inside objects:
+```
+article: {
+  title: My Article
+  description::
+this is a
+multiline description
+::
+  author: John Doe
+}
 ```
 
 ### Objects with bracket syntax
@@ -143,10 +168,27 @@ Produces:
 ```
 
 ### Comments
-Lines starting with `//` are ignored:
+
+Single-line comments start with `//`:
 ```
 // This is a comment
 title: My Article
+```
+
+Multiline comments use `/* ... */` syntax (like JavaScript):
+```
+/*
+This is a multiline comment
+spanning multiple lines
+*/
+title: My Article
+/* Another comment */
+author: Test Author
+```
+
+Inline multiline comments are also supported:
+```
+title: Test /* inline comment */ value
 ```
 
 ## API

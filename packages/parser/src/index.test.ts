@@ -46,6 +46,70 @@ author: Test Author
       });
     });
 
+    it('should skip multiline comments', () => {
+      const input = `
+/*
+This is a multiline comment
+spanning multiple lines
+*/
+title: Test
+/* Another comment */
+author: Test Author
+      `.trim();
+
+      const result = parse(input);
+
+      expect(result).toEqual({
+        title: 'Test',
+        author: 'Test Author'
+      });
+    });
+
+    it('should handle multiline comments in arrays', () => {
+      const input = `
+tags: [
+javascript
+/* comment in array */
+typescript
+nodejs
+]
+      `.trim();
+
+      const result = parse(input);
+
+      expect(result.tags).toEqual(['javascript', 'typescript', 'nodejs']);
+    });
+
+    it('should handle multiline comments in objects', () => {
+      const input = `
+author: {
+  /* comment before property */
+  name: John Doe
+  /* another comment */
+  email: john@example.com
+}
+      `.trim();
+
+      const result = parse(input);
+
+      expect(result.author).toEqual({
+        name: 'John Doe',
+        email: 'john@example.com'
+      });
+    });
+
+    it('should handle inline multiline comments', () => {
+      const input = `
+title: Test /* inline comment */ value
+author: John Doe
+      `.trim();
+
+      const result = parse(input);
+
+      expect(result.title).toBe('Test  value');
+      expect(result.author).toBe('John Doe');
+    });
+
     it('should parse multiline strings with :: syntax', () => {
       const input = `
 title: My Article
@@ -64,7 +128,7 @@ author: John Doe
       expect(result.author).toBe('John Doe');
     });
 
-    it('should handle multiline with indentation', () => {
+    it('should strip leading and trailing spaces from multiline content lines', () => {
       const input = `
 content::
   Line 1 with indent
@@ -74,7 +138,20 @@ content::
 
       const result = parse(input);
 
-      expect(result.content).toBe('  Line 1 with indent\n  Line 2 with indent');
+      expect(result.content).toBe('Line 1 with indent\nLine 2 with indent');
+    });
+
+    it('should preserve internal spaces in multiline content', () => {
+      const input = `
+content::
+Line with  multiple  spaces
+Another   line
+::
+      `.trim();
+
+      const result = parse(input);
+
+      expect(result.content).toBe('Line with  multiple  spaces\nAnother   line');
     });
 
     it('should handle empty multiline blocks', () => {
@@ -153,6 +230,68 @@ empty: {
       const result = parse(input);
 
       expect(result.empty).toEqual({});
+    });
+
+    it('should parse multiline strings inside objects', () => {
+      const input = `
+article: {
+  title: My Article
+  description::
+this is a
+multiline description
+::
+  author: John Doe
+}
+      `.trim();
+
+      const result = parse(input);
+
+      expect(result.article).toEqual({
+        title: 'My Article',
+        description: 'this is a\nmultiline description',
+        author: 'John Doe'
+      });
+    });
+
+    it('should handle multiple multiline strings in objects', () => {
+      const input = `
+post: {
+  title::
+First Line
+Second Line
+::
+  content::
+Content line 1
+Content line 2
+Content line 3
+::
+  author: Jane
+}
+      `.trim();
+
+      const result = parse(input);
+
+      expect(result.post).toEqual({
+        title: 'First Line\nSecond Line',
+        content: 'Content line 1\nContent line 2\nContent line 3',
+        author: 'Jane'
+      });
+    });
+
+    it('should strip spaces from multiline strings in objects', () => {
+      const input = `
+article: {
+  description::
+  Line with leading spaces
+    Line with more spaces
+  Last line
+::
+}
+      `.trim();
+
+      const result = parse(input);
+
+      expect(result.article.description).toBe('Line with leading spaces\nLine with more spaces\nLast line');
     });
 
     it('should parse simple arrays', () => {
@@ -456,6 +595,26 @@ author.email: john@example.com
       const reparsed = parse(stringified);
 
       expect(reparsed).toEqual(parsed);
+    });
+
+    it('should roundtrip objects with multiline strings', () => {
+      const input = `
+article: {
+  title: My Article
+  description::
+this is a
+multiline description
+::
+  author: John Doe
+}
+      `.trim();
+
+      const parsed = parse(input);
+      const stringified = stringify(parsed);
+      const reparsed = parse(stringified);
+
+      expect(reparsed).toEqual(parsed);
+      expect(reparsed.article.description).toBe('this is a\nmultiline description');
     });
 
     it('should stringify simple arrays', () => {
