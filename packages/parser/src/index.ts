@@ -348,7 +348,7 @@ function stringifyObjectEntries(data: ADMLResult, indent: string): string[] {
       lines.push(`${indent}${key}: ${value}`);
     } else if (Array.isArray(value)) {
       lines.push(`${indent}${key}: [`);
-      lines.push(...stringifyArray(value, indent));
+      lines.push(...stringifyArray(value, indent + '  '));
       lines.push(`${indent}]`);
     } else if (typeof value === 'object' && value !== null) {
       lines.push(`${indent}${key}: {`);

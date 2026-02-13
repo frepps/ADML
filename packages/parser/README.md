@@ -132,9 +132,70 @@ Both syntaxes above produce the same result:
 }
 ```
 
-### Arrays with bracket syntax
+### Nested objects
 
-Array values must be on separate lines. Indentation is optional and stripped from values, but improves readability:
+Objects can nest to any depth. Bracket syntax and dot notation can be mixed freely — all of the following produce the same result:
+
+Nested brackets:
+```
+obj: {
+  key: {
+    subkey: value
+  }
+}
+```
+
+Dot notation inside brackets:
+```
+obj: {
+  key.subkey: value
+}
+```
+
+Dot notation opening a bracket block:
+```
+obj.key: {
+  subkey: value
+}
+```
+
+Pure dot notation:
+```
+obj.key.subkey: value
+```
+
+All produce:
+```json
+{
+  "obj": {
+    "key": {
+      "subkey": "value"
+    }
+  }
+}
+```
+
+Dot notation merges into existing objects, so this works:
+```
+obj: {
+  key1: val1
+}
+obj.key2: val2
+```
+
+Produces:
+```json
+{
+  "obj": {
+    "key1": "val1",
+    "key2": "val2"
+  }
+}
+```
+
+### Arrays
+
+Array values must be on separate lines, indented with two spaces:
 
 ```
 tags: [
@@ -144,16 +205,7 @@ tags: [
 ]
 ```
 
-Or without indentation:
-```
-tags: [
-javascript
-typescript
-nodejs
-]
-```
-
-Both produce:
+Produces:
 ```json
 {
   "tags": ["javascript", "typescript", "nodejs"]
@@ -182,8 +234,8 @@ Produces:
 ```json
 {
   "matrix": [
-    ["1", "2"],
-    ["3", "4"],
+    [1, 2],
+    [3, 4],
     "single value"
   ]
 }

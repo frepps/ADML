@@ -14,7 +14,7 @@
     "./style.css": "./dist/style.css"
   },
   "scripts": {
-    "build": "npm run build:types && npm run build:lib",
+    "build": "npm run build:lib && npm run build:types",
     "build:types": "tsc --emitDeclarationOnly",
     "build:lib": "vite build",
     "dev": "vite build --watch",

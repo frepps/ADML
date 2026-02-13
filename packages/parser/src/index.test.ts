@@ -68,10 +68,10 @@ author: Test Author
     it('should handle multiline comments in arrays', () => {
       const input = `
 tags: [
-javascript
-/* comment in array */
-typescript
-nodejs
+  javascript
+  /* comment in array */
+  typescript
+  nodejs
 ]
       `.trim();
 
@@ -298,9 +298,9 @@ article: {
       const input = `
 title: My Article
 tags: [
-javascript
-typescript
-nodejs
+  javascript
+  typescript
+  nodejs
 ]
       `.trim();
 
@@ -313,14 +313,14 @@ nodejs
     it('should parse nested arrays', () => {
       const input = `
 matrix: [
-[
-1
-2
-]
-[
-3
-4
-]
+  [
+    1
+    2
+  ]
+  [
+    3
+    4
+  ]
 ]
       `.trim();
 
@@ -332,14 +332,14 @@ matrix: [
     it('should parse mixed arrays', () => {
       const input = `
 items: [
-[
-nested1
-nested2
-]
-single value
-[
-nested3
-]
+  [
+    nested1
+    nested2
+  ]
+  single value
+  [
+    nested3
+  ]
 ]
       `.trim();
 
@@ -410,9 +410,9 @@ config: {
     it('should parse numbers in arrays', () => {
       const input = `
 numbers: [
-1
-2.5
--3
+  1
+  2.5
+  -3
 ]
       `.trim();
 
@@ -479,9 +479,9 @@ config: {
     it('should parse booleans in arrays', () => {
       const input = `
 flags: [
-true
-false
-true
+  true
+  false
+  true
 ]
       `.trim();
 
@@ -731,9 +731,9 @@ multiline description
 
       expect(result).toContain('title: My Article');
       expect(result).toContain('tags: [');
-      expect(result).toContain('javascript');
-      expect(result).toContain('typescript');
-      expect(result).toContain('nodejs');
+      expect(result).toContain('  javascript');
+      expect(result).toContain('  typescript');
+      expect(result).toContain('  nodejs');
       expect(result).toContain(']');
     });
 
@@ -745,20 +745,20 @@ multiline description
       const result = stringify(data);
 
       expect(result).toContain('matrix: [');
-      expect(result).toContain('[');
-      expect(result).toContain('1');
-      expect(result).toContain('2');
-      expect(result).toContain('3');
-      expect(result).toContain('4');
-      expect(result).toContain(']');
+      expect(result).toContain('  [');
+      expect(result).toContain('    1');
+      expect(result).toContain('    2');
+      expect(result).toContain('    3');
+      expect(result).toContain('    4');
+      expect(result).toContain('  ]');
     });
 
     it('should roundtrip simple arrays', () => {
       const input = `
 tags: [
-javascript
-typescript
-nodejs
+  javascript
+  typescript
+  nodejs
 ]
       `.trim();
 
@@ -772,14 +772,14 @@ nodejs
     it('should roundtrip nested arrays', () => {
       const input = `
 matrix: [
-[
-1
-2
-]
-[
-3
-4
-]
+  [
+    1
+    2
+  ]
+  [
+    3
+    4
+  ]
 ]
       `.trim();
 

@@ -32,11 +32,13 @@ npm test -- --watch  # Run tests in watch mode
 ### Editor Package (packages/editor/)
 ```bash
 cd packages/editor
-npm run build        # Build library with types
-npm run build:types  # Generate .d.ts files only
+npm run build        # Build with Vite, then generate .d.ts files
 npm run build:lib    # Build with Vite only
+npm run build:types  # Generate .d.ts files only
 npm run dev          # Watch mode
 ```
+
+**Note:** The editor build runs `build:lib` (Vite) before `build:types` (tsc) because Vite cleans the `dist/` directory. Reversing this order will delete the `.d.ts` files.
 
 ### Playground (apps/docs/)
 ```bash
@@ -54,17 +56,43 @@ The parser is a single-pass, line-by-line state machine with these key functions
 
 1. **`parseValue(value: string): any`** - Type detection in this priority: boolean → number → string
 2. **`parseArray(lines: string[], startIndex: number)`** - Handles `[...]` array blocks, supports nesting
-3. **`parse(input: string, options?: ADMLParseOptions): ADMLResult`** - Main parser entry point
-4. **`stringify(data: ADMLResult, options?: ADMLParseOptions): string`** - JSON to ADML converter
-5. **`stringifyArray(arr: any[], indent: string)`** - Array to ADML format converter
+3. **`parseObject(lines: string[], startIndex: number)`** - Handles `{...}` object blocks recursively, supports nested objects, dot notation inside objects, and arrays inside objects
+4. **`setByPath(obj, path, value)`** - Sets a value at a dot-separated path (e.g., `"a.b.c"`), creating intermediate objects as needed and merging into existing ones
+5. **`parse(input: string, options?: ADMLParseOptions): ADMLResult`** - Main parser entry point
+6. **`stringify(data: ADMLResult, options?: ADMLParseOptions): string`** - JSON to ADML converter
+7. **`stringifyObjectEntries(data, indent)`** - Recursive object-to-ADML converter (handles nested objects to any depth)
+8. **`stringifyArray(arr: any[], indent: string)`** - Array to ADML format converter with proper indentation
 
 ### Parser State Machine
 
 The parser processes ADML line-by-line, tracking:
-- Current object scope (for bracket `{}` syntax)
+- Current object scope (for bracket `{}` syntax, recursive via `parseObject`)
 - Array depth (for nested arrays)
 - Multiline string state (between `::` delimiters)
-- Dot notation paths (e.g., `author.name` creates nested structure)
+- Dot notation paths (e.g., `a.b.c` creates deeply nested structure via `setByPath`)
+
+### Object Nesting
+
+Objects can be nested using any combination of bracket syntax and dot notation:
+```
+// All of these produce { obj: { key: { subkey: "value" } } }
+
+obj: {
+  key: {
+    subkey: value
+  }
+}
+
+obj: {
+  key.subkey: value
+}
+
+obj.key: {
+  subkey: value
+}
+
+obj.key.subkey: value
+```
 
 ### Data Flow
 
@@ -81,10 +109,11 @@ Roundtrip support means: `parse(stringify(parse(input))) === parse(input)`
 1. **Write tests first** - Edit `packages/parser/src/index.test.ts`
 2. **Run tests in watch mode** - `cd packages/parser && npm test -- --watch`
 3. **Implement in** `packages/parser/src/index.ts`:
-   - For new types: Update `parseValue()` and `stringify()`
-   - For new syntax: Add state machine logic in `parse()` main loop
+   - For new types: Update `parseValue()` and `stringify()`/`stringifyObjectEntries()`
+   - For new syntax: Add logic in `parseObject()` for object-level features, or in `parse()` main loop for top-level features
 4. **Update README** - Add examples to `packages/parser/README.md`
-5. **Test in playground** - Update `apps/docs/src/App.tsx` with examples
+5. **Update docs site** - Add a new step-by-step example in `apps/docs/src/App.tsx` (in the `examples` array) and update the `fullExample` string
+6. **Test in playground** - `cd apps/docs && npm run dev`
 
 ### Building After Parser Changes
 
@@ -94,6 +123,8 @@ cd packages/parser && npm run build
 cd ../editor && npm run build
 cd ../../apps/docs && npm run dev  # Test changes
 ```
+
+Or from root: `npm run build`
 
 ### Test Structure
 
@@ -116,19 +147,19 @@ Always add roundtrip tests for new features to ensure data preservation.
 
 ## Current Limitations
 
-1. **Objects are flat** - Can nest arrays but not objects within objects (only primitives allowed)
-2. **No null/undefined** - Cannot explicitly represent null values
-3. **No error reporting** - Parser doesn't throw helpful errors with line numbers
-4. **Arrays must be multiline** - No inline array syntax like `tags: [a, b, c]`
-5. **No escape sequences** - Special characters in strings not supported yet
+1. **No null/undefined** - Cannot explicitly represent null values
+2. **No error reporting** - Parser doesn't throw helpful errors with line numbers
+3. **Arrays must be multiline** - No inline array syntax like `tags: [a, b, c]`
+4. **No escape sequences** - Special characters in strings not supported yet
 
 ## Key Files
 
-- `packages/parser/src/index.ts` - ~200 lines, all parser logic
-- `packages/parser/src/index.test.ts` - 41 tests, ~640 lines
+- `packages/parser/src/index.ts` - All parser logic
+- `packages/parser/src/index.test.ts` - 59 tests
 - `packages/editor/src/index.ts` - Vanilla JS CodeMirror wrapper
+- `packages/editor/src/auto-close.ts` - Auto-closing brackets and smart indentation
 - `packages/editor/src/react.tsx` - React component wrapper
-- `apps/docs/src/App.tsx` - Playground UI and examples
+- `apps/docs/src/App.tsx` - Documentation site with step-by-step examples and full playground
 
 ## npm Workspaces
 
@@ -148,4 +179,4 @@ When adding features:
 - Roundtrip test - parse → stringify → parse preserves data
 - Edge cases - empty values, special characters, whitespace
 
-All 41 tests must pass before committing changes.
+All 59 tests must pass before committing changes.
