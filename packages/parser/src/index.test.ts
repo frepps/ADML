@@ -502,6 +502,110 @@ feature.beta: false
       expect(result.feature.enabled).toBe(true);
       expect(result.feature.beta).toBe(false);
     });
+
+    it('should parse nested objects with bracket syntax', () => {
+      const input = `
+obj: {
+  key: {
+    subkey: value
+  }
+}
+      `.trim();
+
+      const result = parse(input);
+
+      expect(result).toEqual({
+        obj: { key: { subkey: 'value' } }
+      });
+    });
+
+    it('should parse dot notation inside brackets', () => {
+      const input = `
+obj: {
+  key.subkey: value
+}
+      `.trim();
+
+      const result = parse(input);
+
+      expect(result).toEqual({
+        obj: { key: { subkey: 'value' } }
+      });
+    });
+
+    it('should parse dot notation key with bracket value', () => {
+      const input = `
+obj.key: {
+  subkey: value
+}
+      `.trim();
+
+      const result = parse(input);
+
+      expect(result).toEqual({
+        obj: { key: { subkey: 'value' } }
+      });
+    });
+
+    it('should produce same result for all mixed object syntaxes', () => {
+      const bracketNested = parse(`
+obj: {
+  key: {
+    subkey: value
+  }
+}
+      `.trim());
+
+      const dotInsideBracket = parse(`
+obj: {
+  key.subkey: value
+}
+      `.trim());
+
+      const dotWithBracket = parse(`
+obj.key: {
+  subkey: value
+}
+      `.trim());
+
+      const pureDot = parse(`
+obj.key.subkey: value
+      `.trim());
+
+      expect(bracketNested).toEqual(dotInsideBracket);
+      expect(dotInsideBracket).toEqual(dotWithBracket);
+      expect(dotWithBracket).toEqual(pureDot);
+      expect(pureDot).toEqual({
+        obj: { key: { subkey: 'value' } }
+      });
+    });
+
+    it('should parse deep dot notation (3+ levels)', () => {
+      const input = `
+a.b.c.d: deep
+      `.trim();
+
+      const result = parse(input);
+
+      expect(result).toEqual({
+        a: { b: { c: { d: 'deep' } } }
+      });
+    });
+
+    it('should merge dot notation into existing objects', () => {
+      const input = `
+obj: {
+  key1: val1
+}
+obj.key2: val2
+      `.trim();
+
+      const result = parse(input);
+
+      expect(result).toEqual({
+        obj: { key1: 'val1', key2: 'val2' }
+      });
+    });
   });
 
   describe('stringify', () => {
@@ -775,6 +879,49 @@ config: {
       expect(reparsed).toEqual(parsed);
       expect(reparsed.config.enabled).toBe(true);
       expect(reparsed.config.debug).toBe(false);
+    });
+
+    it('should stringify nested objects recursively', () => {
+      const data = {
+        obj: { key: { subkey: 'value' } }
+      };
+
+      const result = stringify(data);
+
+      expect(result).toContain('obj: {');
+      expect(result).toContain('key: {');
+      expect(result).toContain('subkey: value');
+    });
+
+    it('should roundtrip nested objects', () => {
+      const input = `
+obj: {
+  key: {
+    subkey: value
+  }
+}
+      `.trim();
+
+      const parsed = parse(input);
+      const stringified = stringify(parsed);
+      const reparsed = parse(stringified);
+
+      expect(reparsed).toEqual(parsed);
+      expect(reparsed).toEqual({
+        obj: { key: { subkey: 'value' } }
+      });
+    });
+
+    it('should roundtrip deep dot notation', () => {
+      const input = `
+a.b.c: deep
+      `.trim();
+
+      const parsed = parse(input);
+      const stringified = stringify(parsed);
+      const reparsed = parse(stringified);
+
+      expect(reparsed).toEqual(parsed);
     });
 
     it('should roundtrip mixed types', () => {

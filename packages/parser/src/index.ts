@@ -108,6 +108,117 @@ function parseArray(lines: string[], startIndex: number, inComment: boolean = fa
 }
 
 /**
+ * Helper to set a value at a dot-separated path within an object
+ */
+function setByPath(obj: ADMLResult, path: string, value: any): void {
+  const parts = path.split('.');
+  let current = obj;
+
+  for (let p = 0; p < parts.length - 1; p++) {
+    const part = parts[p];
+    if (!current[part] || typeof current[part] !== 'object' || Array.isArray(current[part])) {
+      current[part] = {};
+    }
+    current = current[part];
+  }
+
+  const lastKey = parts[parts.length - 1];
+  if (typeof value === 'object' && value !== null && !Array.isArray(value) &&
+      typeof current[lastKey] === 'object' && current[lastKey] !== null && !Array.isArray(current[lastKey])) {
+    // Merge into existing object
+    Object.assign(current[lastKey], value);
+  } else {
+    current[lastKey] = value;
+  }
+}
+
+/**
+ * Helper function to parse an object block (lines after `{` until matching `}`)
+ */
+function parseObject(lines: string[], startIndex: number, inComment: boolean = false): { value: ADMLResult; endIndex: number; inComment: boolean } {
+  const obj: ADMLResult = {};
+  let i = startIndex;
+  let inMultilineComment = inComment;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Strip multiline comments
+    const stripped = stripMultilineComments(line, inMultilineComment);
+    inMultilineComment = stripped.inComment;
+    const trimmed = stripped.line.trim();
+
+    if (trimmed === '}') {
+      return { value: obj, endIndex: i + 1, inComment: inMultilineComment };
+    }
+
+    // Skip empty lines and single-line comments
+    if (!trimmed || trimmed.startsWith('//')) {
+      i++;
+      continue;
+    }
+
+    // Check for multiline syntax inside object: propKey::
+    if (trimmed.endsWith('::')) {
+      const propKey = trimmed.substring(0, trimmed.length - 2).trim();
+      const multilineContent: string[] = [];
+
+      i++; // Move to next line after propKey::
+
+      while (i < lines.length) {
+        const contentLine = lines[i];
+
+        if (contentLine.trim() === '::') {
+          setByPath(obj, propKey, multilineContent.join('\n'));
+          i++;
+          break;
+        }
+
+        multilineContent.push(contentLine.trim());
+        i++;
+      }
+
+      continue;
+    }
+
+    const colonIndex = trimmed.indexOf(':');
+
+    // Check for array syntax inside object: propKey: [
+    if (colonIndex > 0 && trimmed.endsWith('[')) {
+      const propKey = trimmed.substring(0, colonIndex).trim();
+      const arr = parseArray(lines, i + 1, inMultilineComment);
+
+      setByPath(obj, propKey, arr.value);
+      i = arr.endIndex;
+      inMultilineComment = arr.inComment;
+      continue;
+    }
+
+    // Check for nested object syntax: propKey: {
+    if (colonIndex > 0 && trimmed.endsWith('{')) {
+      const propKey = trimmed.substring(0, colonIndex).trim();
+      const nested = parseObject(lines, i + 1, inMultilineComment);
+
+      setByPath(obj, propKey, nested.value);
+      i = nested.endIndex;
+      inMultilineComment = nested.inComment;
+      continue;
+    }
+
+    // Parse property (supports dot notation via setByPath)
+    if (colonIndex > 0) {
+      const propKey = trimmed.substring(0, colonIndex).trim();
+      const propValue = trimmed.substring(colonIndex + 1).trim();
+      setByPath(obj, propKey, parseValue(propValue));
+    }
+
+    i++;
+  }
+
+  return { value: obj, endIndex: i, inComment: inMultilineComment };
+}
+
+/**
  * Parse ADML markup string to JSON
  */
 export function parse(input: string, options: ADMLParseOptions = {}): ADMLResult {
@@ -144,7 +255,7 @@ export function parse(input: string, options: ADMLParseOptions = {}): ADMLResult
 
         if (contentLine.trim() === '::') {
           // End of multiline block
-          result[key] = multilineContent.join('\n');
+          setByPath(result, key, multilineContent.join('\n'));
           i++; // Move past the closing ::
           break;
         }
@@ -163,7 +274,7 @@ export function parse(input: string, options: ADMLParseOptions = {}): ADMLResult
       const key = trimmed.substring(0, colonIndex).trim();
       const arr = parseArray(lines, i + 1, inMultilineComment);
 
-      result[key] = arr.value;
+      setByPath(result, key, arr.value);
       i = arr.endIndex;
       inMultilineComment = arr.inComment;
 
@@ -173,99 +284,20 @@ export function parse(input: string, options: ADMLParseOptions = {}): ADMLResult
     // Check for object syntax: key: {
     if (colonIndex > 0 && trimmed.endsWith('{')) {
       const key = trimmed.substring(0, colonIndex).trim();
-      const obj: ADMLResult = {};
+      const nested = parseObject(lines, i + 1, inMultilineComment);
 
-      i++; // Move to next line after key: {
-
-      // Collect properties until we find }
-      while (i < lines.length) {
-        const objLine = lines[i];
-
-        // Strip multiline comments
-        const objStripped = stripMultilineComments(objLine, inMultilineComment);
-        inMultilineComment = objStripped.inComment;
-        const objTrimmed = objStripped.line.trim();
-
-        if (objTrimmed === '}') {
-          // End of object block
-          result[key] = obj;
-          i++; // Move past the closing }
-          break;
-        }
-
-        // Skip empty lines and single-line comments inside object
-        if (!objTrimmed || objTrimmed.startsWith('//')) {
-          i++;
-          continue;
-        }
-
-        // Check for multiline syntax inside object: propKey::
-        if (objTrimmed.endsWith('::')) {
-          const propKey = objTrimmed.substring(0, objTrimmed.length - 2).trim();
-          const multilineContent: string[] = [];
-
-          i++; // Move to next line after propKey::
-
-          // Collect lines until we find ::
-          while (i < lines.length) {
-            const contentLine = lines[i];
-
-            if (contentLine.trim() === '::') {
-              // End of multiline block
-              obj[propKey] = multilineContent.join('\n');
-              i++; // Move past the closing ::
-              break;
-            }
-
-            // Trim leading and trailing spaces from each line
-            multilineContent.push(contentLine.trim());
-            i++;
-          }
-
-          continue;
-        }
-
-        // Parse property inside object
-        const propColonIndex = objTrimmed.indexOf(':');
-        if (propColonIndex > 0) {
-          const propKey = objTrimmed.substring(0, propColonIndex).trim();
-          const propValue = objTrimmed.substring(propColonIndex + 1).trim();
-          obj[propKey] = parseValue(propValue);
-        }
-
-        i++;
-      }
+      setByPath(result, key, nested.value);
+      i = nested.endIndex;
+      inMultilineComment = nested.inComment;
 
       continue;
     }
 
-    // Check for dotted notation: key.prop: value
-    if (colonIndex > 0 && trimmed.includes('.')) {
-      const fullKey = trimmed.substring(0, colonIndex).trim();
-      const value = trimmed.substring(colonIndex + 1).trim();
-
-      // Split on first dot
-      const dotIndex = fullKey.indexOf('.');
-      if (dotIndex > 0) {
-        const objKey = fullKey.substring(0, dotIndex).trim();
-        const propKey = fullKey.substring(dotIndex + 1).trim();
-
-        // Initialize object if it doesn't exist
-        if (!result[objKey] || typeof result[objKey] !== 'object') {
-          result[objKey] = {};
-        }
-
-        result[objKey][propKey] = parseValue(value);
-        i++;
-        continue;
-      }
-    }
-
-    // Basic key-value parsing for single-line values
+    // Basic key-value parsing (supports dot notation via setByPath)
     if (colonIndex > 0 && !trimmed.endsWith('::')) {
       const key = trimmed.substring(0, colonIndex).trim();
       const value = trimmed.substring(colonIndex + 1).trim();
-      result[key] = parseValue(value);
+      setByPath(result, key, parseValue(value));
     }
 
     i++;
@@ -298,54 +330,41 @@ function stringifyArray(arr: any[], indent: string = ''): string[] {
 }
 
 /**
- * Stringify JSON back to ADML format
+ * Helper function to stringify object contents at a given indentation level
  */
-export function stringify(data: ADMLResult, options: ADMLParseOptions = {}): string {
+function stringifyObjectEntries(data: ADMLResult, indent: string): string[] {
   const lines: string[] = [];
 
   for (const [key, value] of Object.entries(data)) {
     if (typeof value === 'string') {
-      // Check if string contains newlines - use multiline syntax
       if (value.includes('\n')) {
-        lines.push(`${key}::`);
+        lines.push(`${indent}${key}::`);
         lines.push(value);
         lines.push('::');
       } else {
-        // Single line value
-        lines.push(`${key}: ${value}`);
+        lines.push(`${indent}${key}: ${value}`);
       }
     } else if (typeof value === 'number' || typeof value === 'boolean') {
-      // Numbers and booleans - output as-is
-      lines.push(`${key}: ${value}`);
+      lines.push(`${indent}${key}: ${value}`);
     } else if (Array.isArray(value)) {
-      // Arrays - use bracket syntax
-      lines.push(`${key}: [`);
-      lines.push(...stringifyArray(value));
-      lines.push(']');
+      lines.push(`${indent}${key}: [`);
+      lines.push(...stringifyArray(value, indent));
+      lines.push(`${indent}]`);
     } else if (typeof value === 'object' && value !== null) {
-      // Object - use bracket syntax
-      lines.push(`${key}: {`);
-      for (const [propKey, propValue] of Object.entries(value)) {
-        if (typeof propValue === 'string') {
-          // Check if string contains newlines - use multiline syntax
-          if (propValue.includes('\n')) {
-            lines.push(`  ${propKey}::`);
-            lines.push(propValue);
-            lines.push('::');
-          } else {
-            lines.push(`  ${propKey}: ${propValue}`);
-          }
-        } else if (typeof propValue === 'number' || typeof propValue === 'boolean') {
-          lines.push(`  ${propKey}: ${propValue}`);
-        } else {
-          // Nested objects - fallback to JSON
-          lines.push(`  ${propKey}: ${JSON.stringify(propValue)}`);
-        }
-      }
-      lines.push('}');
+      lines.push(`${indent}${key}: {`);
+      lines.push(...stringifyObjectEntries(value, indent + '  '));
+      lines.push(`${indent}}`);
     }
   }
 
+  return lines;
+}
+
+/**
+ * Stringify JSON back to ADML format
+ */
+export function stringify(data: ADMLResult, options: ADMLParseOptions = {}): string {
+  const lines = stringifyObjectEntries(data, '');
   return lines.join('\n');
 }
 
