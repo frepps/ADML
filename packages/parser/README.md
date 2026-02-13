@@ -133,6 +133,18 @@ Both syntaxes above produce the same result:
 ```
 
 ### Arrays with bracket syntax
+
+Array values must be on separate lines. Indentation is optional and stripped from values, but improves readability:
+
+```
+tags: [
+  javascript
+  typescript
+  nodejs
+]
+```
+
+Or without indentation:
 ```
 tags: [
 javascript
@@ -141,18 +153,28 @@ nodejs
 ]
 ```
 
+Both produce:
+```json
+{
+  "tags": ["javascript", "typescript", "nodejs"]
+}
+```
+
 ### Nested arrays
+
+Arrays can be nested. Each value (including nested arrays) must be on its own line:
+
 ```
 matrix: [
-[
-1
-2
-]
-[
-3
-4
-]
-single value
+  [
+    1
+    2
+  ]
+  [
+    3
+    4
+  ]
+  single value
 ]
 ```
 
