@@ -945,4 +945,357 @@ disabled: false
       expect(typeof reparsed.disabled).toBe('boolean');
     });
   });
+
+  describe('content arrays', () => {
+    it('should parse content array with typed entries', () => {
+      const input = `
+content: [[
+  #heading: Welcome
+  #image: photo.jpg
+]]`.trim();
+      const result = parse(input);
+      expect(result.content).toEqual([
+        { type: 'heading', value: 'Welcome', mods: [], props: {} },
+        { type: 'image', value: 'photo.jpg', mods: [], props: {} },
+      ]);
+    });
+
+    it('should parse content entries with modifiers', () => {
+      const input = `
+content: [[
+  #heading.large.bold: Title
+]]`.trim();
+      const result = parse(input);
+      expect(result.content[0]).toEqual({
+        type: 'heading', value: 'Title', mods: ['large', 'bold'], props: {}
+      });
+    });
+
+    it('should parse plain text as paragraph type', () => {
+      const input = `
+content: [[
+  This is a paragraph.
+]]`.trim();
+      const result = parse(input);
+      expect(result.content[0]).toEqual({
+        type: 'p', value: 'This is a paragraph.', mods: [], props: {}
+      });
+    });
+
+    it('should parse content entries with props', () => {
+      const input = `
+content: [[
+  <#image.hero: banner.jpg
+    alt: A beautiful banner
+    width: 1200
+  >
+]]`.trim();
+      const result = parse(input);
+      expect(result.content[0]).toEqual({
+        type: 'image', value: 'banner.jpg', mods: ['hero'],
+        props: { alt: 'A beautiful banner', width: 1200 }
+      });
+    });
+
+    it('should allow props value key to override content value', () => {
+      const input = `
+content: [[
+  <#heading: Original
+    value: Overridden
+  >
+]]`.trim();
+      const result = parse(input);
+      expect(result.content[0].value).toBe('Overridden');
+      expect(result.content[0].props.value).toBeUndefined();
+    });
+
+    it('should allow props mods key to override content mods', () => {
+      const input = `
+content: [[
+  <#heading.small: Title
+    mods: [
+      large
+      bold
+    ]
+  >
+]]`.trim();
+      const result = parse(input);
+      expect(result.content[0].mods).toEqual(['large', 'bold']);
+      expect(result.content[0].props.mods).toBeUndefined();
+    });
+
+    it('should parse nested content arrays as value', () => {
+      const input = `
+content: [[
+  <#div.border: [[
+      #h3: Hello fellow coder
+      This is awesome!
+    ]]
+    style.color: blue
+  >
+]]`.trim();
+      const result = parse(input);
+      expect(result.content[0].type).toBe('div');
+      expect(result.content[0].mods).toEqual(['border']);
+      expect(result.content[0].value).toEqual([
+        { type: 'h3', value: 'Hello fellow coder', mods: [], props: {} },
+        { type: 'p', value: 'This is awesome!', mods: [], props: {} },
+      ]);
+      expect(result.content[0].props).toEqual({
+        style: { color: 'blue' }
+      });
+    });
+
+    it('should parse nested content arrays in props', () => {
+      const input = `
+content: [[
+  <#section: Main
+    children: [[
+      #heading: Nested Title
+      Some paragraph text.
+    ]]
+  >
+]]`.trim();
+      const result = parse(input);
+      expect(result.content[0].props.children).toEqual([
+        { type: 'heading', value: 'Nested Title', mods: [], props: {} },
+        { type: 'p', value: 'Some paragraph text.', mods: [], props: {} },
+      ]);
+    });
+
+    it('should parse mixed content types', () => {
+      const input = `
+content: [[
+  #heading: Welcome
+  This is body text.
+  <#image: photo.jpg
+    alt: A photo
+  >
+  Another paragraph.
+]]`.trim();
+      const result = parse(input);
+      expect(result.content).toHaveLength(4);
+      expect(result.content[0].type).toBe('heading');
+      expect(result.content[1].type).toBe('p');
+      expect(result.content[2].type).toBe('image');
+      expect(result.content[3].type).toBe('p');
+    });
+
+    it('should parse empty content array', () => {
+      const input = `
+content: [[
+]]`.trim();
+      const result = parse(input);
+      expect(result.content).toEqual([]);
+    });
+
+    it('should parse content arrays inside objects', () => {
+      const input = `
+article: {
+  title: My Article
+  body: [[
+    #heading: Introduction
+    Some text here.
+  ]]
+}`.trim();
+      const result = parse(input);
+      expect(result.article.body).toEqual([
+        { type: 'heading', value: 'Introduction', mods: [], props: {} },
+        { type: 'p', value: 'Some text here.', mods: [], props: {} },
+      ]);
+    });
+
+    it('should parse content arrays with dot notation keys', () => {
+      const input = `
+page.content: [[
+  #heading: Hello
+]]`.trim();
+      const result = parse(input);
+      expect(result.page.content).toEqual([
+        { type: 'heading', value: 'Hello', mods: [], props: {} },
+      ]);
+    });
+
+    it('should parse props with dot notation and nested objects', () => {
+      const input = `
+content: [[
+  <#component: Button
+    style.color: blue
+    style.fontSize: 14
+    onClick: handleClick
+  >
+]]`.trim();
+      const result = parse(input);
+      expect(result.content[0].props).toEqual({
+        style: { color: 'blue', fontSize: 14 },
+        onClick: 'handleClick',
+      });
+    });
+
+    it('should parse type without colon as empty value', () => {
+      const input = `
+content: [[
+  <#divider
+    width: 100
+  >
+]]`.trim();
+      const result = parse(input);
+      expect(result.content[0].type).toBe('divider');
+      expect(result.content[0].value).toBe('');
+      expect(result.content[0].props).toEqual({ width: 100 });
+    });
+
+    it('should parse type with colon but no value', () => {
+      const input = `
+content: [[
+  <#divider:
+    width: 100
+  >
+]]`.trim();
+      const result = parse(input);
+      expect(result.content[0].type).toBe('divider');
+      expect(result.content[0].value).toBe('');
+    });
+
+    it('should parse content arrays inside regular arrays', () => {
+      const input = `
+items: [
+  [[
+    #heading: Hello
+  ]]
+]`.trim();
+      const result = parse(input);
+      expect(result.items[0]).toEqual([
+        { type: 'heading', value: 'Hello', mods: [], props: {} },
+      ]);
+    });
+
+    it('should stringify content arrays', () => {
+      const data = {
+        content: [
+          { type: 'heading', value: 'Title', mods: [], props: {} },
+          { type: 'p', value: 'Body text', mods: [], props: {} },
+        ]
+      };
+      const result = stringify(data);
+      expect(result).toContain('content: [[');
+      expect(result).toContain('#heading: Title');
+      expect(result).toContain('Body text');
+      expect(result).toContain(']]');
+    });
+
+    it('should stringify content entries with modifiers', () => {
+      const data = {
+        content: [
+          { type: 'heading', value: 'Title', mods: ['large', 'bold'], props: {} },
+        ]
+      };
+      const result = stringify(data);
+      expect(result).toContain('#heading.large.bold: Title');
+    });
+
+    it('should stringify content entries with props using angle brackets', () => {
+      const data = {
+        content: [
+          { type: 'image', value: 'photo.jpg', mods: ['hero'], props: { alt: 'A photo', width: 1200 } },
+        ]
+      };
+      const result = stringify(data);
+      expect(result).toContain('<#image.hero: photo.jpg');
+      expect(result).toContain('alt: A photo');
+      expect(result).toContain('width: 1200');
+      expect(result).toContain('>');
+    });
+
+    it('should stringify plain text entries without # prefix', () => {
+      const data = {
+        content: [
+          { type: 'p', value: 'Just a paragraph.', mods: [], props: {} },
+        ]
+      };
+      const result = stringify(data);
+      expect(result).toContain('Just a paragraph.');
+      expect(result).not.toContain('#p');
+    });
+
+    it('should roundtrip simple content array', () => {
+      const input = `
+content: [[
+  #heading: Welcome
+  This is a paragraph.
+  #image: photo.jpg
+]]`.trim();
+      const parsed = parse(input);
+      const stringified = stringify(parsed);
+      const reparsed = parse(stringified);
+      expect(reparsed).toEqual(parsed);
+    });
+
+    it('should roundtrip content with mods and props', () => {
+      const input = `
+content: [[
+  <#image.hero.featured: banner.jpg
+    alt: A beautiful banner
+    width: 1200
+  >
+]]`.trim();
+      const parsed = parse(input);
+      const stringified = stringify(parsed);
+      const reparsed = parse(stringified);
+      expect(reparsed).toEqual(parsed);
+    });
+
+    it('should roundtrip nested content arrays', () => {
+      const input = `
+content: [[
+  <#div.container: [[
+      #h1: Title
+      Some text here.
+    ]]
+    class: main
+  >
+]]`.trim();
+      const parsed = parse(input);
+      const stringified = stringify(parsed);
+      const reparsed = parse(stringified);
+      expect(reparsed).toEqual(parsed);
+    });
+
+    it('should roundtrip mixed content', () => {
+      const input = `
+content: [[
+  #heading.large: Article Title
+  This is the opening paragraph.
+  <#image.hero: banner.jpg
+    alt: Article banner
+    width: 1200
+  >
+  Another paragraph follows.
+]]`.trim();
+      const parsed = parse(input);
+      const stringified = stringify(parsed);
+      const reparsed = parse(stringified);
+      expect(reparsed).toEqual(parsed);
+    });
+
+    it('should allow value and mods override with omitted header values', () => {
+      const input = `
+content: [[
+  <#type
+    value: override value
+    mods: [
+      mod1
+      mod2
+    ]
+  >
+]]`.trim();
+      const result = parse(input);
+      expect(result.content[0]).toEqual({
+        type: 'type',
+        value: 'override value',
+        mods: ['mod1', 'mod2'],
+        props: {}
+      });
+    });
+  });
 });

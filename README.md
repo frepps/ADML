@@ -12,9 +12,10 @@ ADML is designed for structured article data, making it easy to write and parse 
 - ✅ **Multiline strings**: Using `::` delimiters
 - ✅ **Objects**: Both bracket `{ }` and dot notation syntax
 - ✅ **Arrays**: Including nested arrays with `[ ]` syntax
+- ✅ **Content arrays**: Structured content blocks with `[[ ]]` syntax
 - ✅ **Comments**: Line comments with `//`
 - ✅ **Roundtrip support**: Parse ADML → JSON → ADML preserves data
-- ✅ **41 comprehensive tests**: Ensuring reliability
+- ✅ **84 comprehensive tests**: Ensuring reliability
 
 ## Monorepo Structure
 

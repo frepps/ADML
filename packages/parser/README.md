@@ -241,6 +241,66 @@ Produces:
 }
 ```
 
+### Content arrays
+
+Content arrays use double brackets `[[...]]` to define structured content blocks. Each entry becomes an object with `type`, `value`, `mods` (modifiers), and `props` (properties):
+
+```
+body: [[
+  #heading: Welcome
+  This is a paragraph.
+  #image.hero: banner.jpg
+]]
+```
+
+Produces:
+```json
+{
+  "body": [
+    { "type": "heading", "value": "Welcome", "mods": [], "props": {} },
+    { "type": "p", "value": "This is a paragraph.", "mods": [], "props": {} },
+    { "type": "image", "value": "banner.jpg", "mods": ["hero"], "props": {} }
+  ]
+}
+```
+
+- Lines starting with `#` define the type: `#type: value`
+- Modifiers are added with dots: `#type.mod1.mod2: value`
+- Plain text (no `#`) gets the default type `"p"`
+
+#### Content entries with props
+
+Use `<...>` to add properties to a content entry. Props use the same syntax as regular ADML values:
+
+```
+body: [[
+  <#image.hero: banner.jpg
+    alt: A beautiful banner
+    width: 1200
+    style.objectFit: cover
+  >
+]]
+```
+
+Special prop keys:
+- `value` overrides the content value
+- `mods` (with array value) overrides the content modifiers
+
+#### Nested content arrays
+
+Content arrays can be used as values or props, enabling component trees:
+
+```
+body: [[
+  <#div.container: [[
+      #h1: Title
+      Some text here.
+    ]]
+    class: main
+  >
+]]
+```
+
 ### Comments
 
 Single-line comments start with `//`:

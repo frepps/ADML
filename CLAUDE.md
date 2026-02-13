@@ -56,18 +56,25 @@ The parser is a single-pass, line-by-line state machine with these key functions
 
 1. **`parseValue(value: string): any`** - Type detection in this priority: boolean → number → string
 2. **`parseArray(lines: string[], startIndex: number)`** - Handles `[...]` array blocks, supports nesting
-3. **`parseObject(lines: string[], startIndex: number)`** - Handles `{...}` object blocks recursively, supports nested objects, dot notation inside objects, and arrays inside objects
-4. **`setByPath(obj, path, value)`** - Sets a value at a dot-separated path (e.g., `"a.b.c"`), creating intermediate objects as needed and merging into existing ones
-5. **`parse(input: string, options?: ADMLParseOptions): ADMLResult`** - Main parser entry point
-6. **`stringify(data: ADMLResult, options?: ADMLParseOptions): string`** - JSON to ADML converter
-7. **`stringifyObjectEntries(data, indent)`** - Recursive object-to-ADML converter (handles nested objects to any depth)
-8. **`stringifyArray(arr: any[], indent: string)`** - Array to ADML format converter with proper indentation
+3. **`parseContentHeader(text: string)`** - Parses `#type.mod1.mod2: value` into `{ type, value, mods }`
+4. **`parseContentArray(lines: string[], startIndex: number)`** - Handles `[[...]]` content array blocks with typed entries, props, and nesting
+5. **`parseObjectLike(lines, startIndex, inComment, closer)`** - Generic object block parser, configurable closing delimiter (`}` or `>`)
+6. **`parseObject(lines: string[], startIndex: number)`** - Wrapper for `parseObjectLike` with `}` closer
+7. **`parseProps(lines: string[], startIndex: number)`** - Wrapper for `parseObjectLike` with `>` closer (for content entry props)
+8. **`setByPath(obj, path, value)`** - Sets a value at a dot-separated path (e.g., `"a.b.c"`), creating intermediate objects as needed and merging into existing ones
+9. **`parse(input: string, options?: ADMLParseOptions): ADMLResult`** - Main parser entry point
+10. **`stringify(data: ADMLResult, options?: ADMLParseOptions): string`** - JSON to ADML converter
+11. **`stringifyObjectEntries(data, indent)`** - Recursive object-to-ADML converter (handles nested objects to any depth)
+12. **`stringifyArray(arr: any[], indent: string)`** - Array to ADML format converter with proper indentation
+13. **`stringifyContentArray(arr, indent)`** - Content array to ADML format converter
+14. **`isContentArray(arr)`** - Detects if an array contains content objects (has type/value/mods/props shape)
 
 ### Parser State Machine
 
 The parser processes ADML line-by-line, tracking:
-- Current object scope (for bracket `{}` syntax, recursive via `parseObject`)
+- Current object scope (for bracket `{}` syntax, recursive via `parseObjectLike`)
 - Array depth (for nested arrays)
+- Content array depth (for `[[...]]` blocks)
 - Multiline string state (between `::` delimiters)
 - Dot notation paths (e.g., `a.b.c` creates deeply nested structure via `setByPath`)
 
@@ -110,7 +117,7 @@ Roundtrip support means: `parse(stringify(parse(input))) === parse(input)`
 2. **Run tests in watch mode** - `cd packages/parser && npm test -- --watch`
 3. **Implement in** `packages/parser/src/index.ts`:
    - For new types: Update `parseValue()` and `stringify()`/`stringifyObjectEntries()`
-   - For new syntax: Add logic in `parseObject()` for object-level features, or in `parse()` main loop for top-level features
+   - For new syntax: Add logic in `parseObjectLike()` for object-level features, or in `parse()` main loop for top-level features
 4. **Update README** - Add examples to `packages/parser/README.md`
 5. **Update docs site** - Add a new step-by-step example in `apps/docs/src/App.tsx` (in the `examples` array) and update the `fullExample` string
 6. **Test in playground** - `cd apps/docs && npm run dev`
@@ -155,7 +162,7 @@ Always add roundtrip tests for new features to ensure data preservation.
 ## Key Files
 
 - `packages/parser/src/index.ts` - All parser logic
-- `packages/parser/src/index.test.ts` - 59 tests
+- `packages/parser/src/index.test.ts` - 84 tests
 - `packages/editor/src/index.ts` - Vanilla JS CodeMirror wrapper
 - `packages/editor/src/auto-close.ts` - Auto-closing brackets and smart indentation
 - `packages/editor/src/react.tsx` - React component wrapper
@@ -179,4 +186,4 @@ When adding features:
 - Roundtrip test - parse → stringify → parse preserves data
 - Edge cases - empty values, special characters, whitespace
 
-All 59 tests must pass before committing changes.
+All 84 tests must pass before committing changes.

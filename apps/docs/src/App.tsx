@@ -108,6 +108,20 @@ title: Hello
    multi-line comment */
 author: World`,
   },
+  {
+    title: 'Content Arrays',
+    description:
+      'Structured content blocks using double brackets. Each entry becomes an object with a type, value, modifiers, and optional props.',
+    adml: `content: [[
+  #heading: Welcome to ADML
+  This is a paragraph of text.
+  #image.hero: banner.jpg
+  <#button.primary: Click Me
+    href: /get-started
+    target: _blank
+  >
+]]`,
+  },
 ];
 
 const fullExample = `/*
@@ -163,10 +177,22 @@ ADML supports multiple data types:
 - Objects with { } or dot notation
 - Nested objects to any depth
 - Arrays with [ ]
+- Content arrays with [[ ]]
 - Single-line // and /* multiline */ comments
 
 Perfect for structured article data!
 ::
+
+// Content arrays
+body: [[
+  #heading.large: Article Title
+  This is the opening paragraph.
+  <#image.hero: banner.jpg
+    alt: Article banner image
+    width: 1200
+  >
+  Another paragraph follows the image.
+]]
 
 category: documentation
 `;

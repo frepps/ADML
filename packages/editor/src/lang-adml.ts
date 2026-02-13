@@ -18,6 +18,7 @@ const admlStreamParser = {
     inMultilineComment: false,
     inMultilineValue: false,
     afterColon: false, // Track if we just saw a colon
+    inContentArray: 0, // Depth counter for [[ ]] content arrays
   }),
   token: (stream: any, state: any) => {
     // Handle multiline comments
@@ -59,15 +60,50 @@ const admlStreamParser = {
       return null;
     }
 
-    // Handle brackets
+    // Handle brackets - double brackets [[ ]] must come before single
+    if (stream.match(']]')) {
+      state.inContentArray = Math.max(0, state.inContentArray - 1);
+      state.afterColon = false;
+      return 'squareBracket';
+    }
+
+    if (stream.match('[[')) {
+      state.inContentArray++;
+      state.afterColon = false;
+      return 'squareBracket';
+    }
+
     if (stream.match(/[{}]/)) {
       state.afterColon = false;
       return 'bracket';
     }
 
+    // Content array props delimiters < >
+    if (state.inContentArray > 0) {
+      if (stream.match('<')) {
+        state.afterColon = false;
+        return 'bracket';
+      }
+      if (stream.match('>')) {
+        state.afterColon = false;
+        return 'bracket';
+      }
+    }
+
     if (stream.match(/[\[\]]/)) {
       state.afterColon = false;
       return 'squareBracket';
+    }
+
+    // Inside content array: #type and .mod highlighting
+    if (state.inContentArray > 0) {
+      if (stream.match(/#[a-zA-Z_]\w*/)) {
+        return 'keyword';
+      }
+      // Modifier dots after type (e.g. .large.bold)
+      if (stream.match(/\.[a-zA-Z_]\w*/)) {
+        return 'propertyName';
+      }
     }
 
     // Check for property name (at start of line or after whitespace)
@@ -170,6 +206,7 @@ function admlAutocomplete(context: CompletionContext) {
         { label: 'key: value', type: 'text', info: 'Simple key-value pair', apply: 'key: value' },
         { label: 'key: {', type: 'text', info: 'Object block', apply: 'key: {\n  \n}' },
         { label: 'key: [', type: 'text', info: 'Array block', apply: 'key: [\n\n]' },
+        { label: 'key: [[', type: 'text', info: 'Content array block', apply: 'key: [[\n  \n]]' },
         { label: 'key::', type: 'text', info: 'Multiline value', apply: 'key::\n\n::' },
       ]
     };

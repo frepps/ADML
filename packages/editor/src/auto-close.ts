@@ -48,7 +48,7 @@ function handleOpenBrace(view: any): boolean {
 }
 
 /**
- * Handle opening bracket [ for arrays
+ * Handle opening bracket [ for arrays and content arrays
  */
 function handleOpenBracket(view: any): boolean {
   const { state } = view;
@@ -59,7 +59,23 @@ function handleOpenBracket(view: any): boolean {
   const line = state.doc.lineAt(main.head);
   const lineText = line.text;
   const beforeCursor = lineText.substring(0, main.head - line.from);
+  const afterCursor = lineText.substring(main.head - line.from);
   const trimmedBefore = beforeCursor.trim();
+
+  // Check if we're inside an auto-closed [] — transform to [[ ]]
+  if (beforeCursor.endsWith('[') && afterCursor.startsWith(']')) {
+    const currentIndent = getIndent(lineText);
+    const newIndent = currentIndent + '  ';
+    // Replace the ] with [\n  \n]]
+    const insertion = `[\n${newIndent}\n${currentIndent}]]`;
+
+    view.dispatch({
+      changes: { from: main.head, to: main.head + 1, insert: insertion },
+      selection: { anchor: main.head + 2 + newIndent.length }
+    });
+
+    return true;
+  }
 
   // Check if we're after a colon (array syntax) OR at start of line (nested array in array)
   const afterColon = beforeCursor.match(/:\s*$/);
@@ -132,6 +148,32 @@ function handleEnter(view: any): boolean {
   // Get current indentation
   const currentIndent = getIndent(lineText);
 
+  // Check if we're between [[ and ]] on same line
+  if (beforeCursor.trim().endsWith('[[') && afterCursor.trim().startsWith(']]')) {
+    const newIndent = currentIndent + '  ';
+    const insertion = `\n${newIndent}\n${currentIndent}`;
+
+    view.dispatch({
+      changes: { from: main.head, insert: insertion },
+      selection: { anchor: main.head + 1 + newIndent.length }
+    });
+
+    return true;
+  }
+
+  // Check if we're between < and > on same line
+  if (beforeCursor.trim().endsWith('<') && afterCursor.trim().startsWith('>')) {
+    const newIndent = currentIndent + '  ';
+    const insertion = `\n${newIndent}\n${currentIndent}`;
+
+    view.dispatch({
+      changes: { from: main.head, insert: insertion },
+      selection: { anchor: main.head + 1 + newIndent.length }
+    });
+
+    return true;
+  }
+
   // Check if we're between opening and closing brackets on same line
   if (beforeCursor.trim().endsWith('{') && afterCursor.trim().startsWith('}')) {
     // Insert newline with increased indent, then newline with current indent
@@ -159,8 +201,8 @@ function handleEnter(view: any): boolean {
     return true;
   }
 
-  // Check if previous line ends with { or [ - add indentation
-  if (beforeCursor.trim().endsWith('{') || beforeCursor.trim().endsWith('[')) {
+  // Check if previous line ends with {, [, [[, or < - add indentation
+  if (beforeCursor.trim().endsWith('{') || beforeCursor.trim().endsWith('[') || beforeCursor.trim().endsWith('[[') || beforeCursor.trim().endsWith('<')) {
     // Increase indentation for nested content
     const newIndent = currentIndent + '  ';
     view.dispatch({
@@ -170,8 +212,8 @@ function handleEnter(view: any): boolean {
     return true;
   }
 
-  // Check if current line is just closing bracket - maintain parent indentation
-  if (beforeCursor.trim() === '' && (afterCursor.trim() === '}' || afterCursor.trim() === ']')) {
+  // Check if current line is just closing bracket/delimiter - maintain parent indentation
+  if (beforeCursor.trim() === '' && (afterCursor.trim() === '}' || afterCursor.trim() === ']' || afterCursor.trim() === ']]' || afterCursor.trim() === '>')) {
     // Maintain current indentation
     view.dispatch({
       changes: { from: main.head, insert: `\n${currentIndent}` },
