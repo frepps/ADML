@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { parse } from '@adml/parser';
+import { parse, parseContentValue } from '@adml/parser';
 import { ADMLEditorReact } from '@adml/editor';
 import './App.css';
 
@@ -124,6 +124,15 @@ author: World`,
   },
 ];
 
+const inlineExamples = [
+  'A [strong part] of string',
+  'Click [here|/about/links] to learn more',
+  '[the value | #em.underlined | style.color:red | id: 1]',
+  'Have a look at this [<code>example</code>]',
+  'Use [] for space, [/] for break, [-] for shy',
+  'He said "hello" -- and left',
+];
+
 const fullExample = `/*
 ADML - Article Data Markup Language
 Try editing the markup below!
@@ -232,6 +241,36 @@ function MiniPlayground({
   );
 }
 
+function InlineContentPlayground({
+  initial,
+}: {
+  initial: string;
+}) {
+  const [value, setValue] = useState(initial);
+  const [json, setJson] = useState(() =>
+    JSON.stringify(parseContentValue(initial), null, 2),
+  );
+
+  return (
+    <div className="inline-playground">
+      <input
+        className="inline-input"
+        type="text"
+        value={value}
+        onChange={(e) => {
+          setValue(e.target.value);
+          try {
+            setJson(JSON.stringify(parseContentValue(e.target.value), null, 2));
+          } catch (err) {
+            setJson(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          }
+        }}
+      />
+      <pre className="inline-output">{json}</pre>
+    </div>
+  );
+}
+
 function App() {
   const [admlValue, setAdmlValue] = useState(fullExample);
   const [jsonOutput, setJsonOutput] = useState(() =>
@@ -266,6 +305,24 @@ function App() {
             <MiniPlayground adml={ex.adml} />
           </div>
         ))}
+      </section>
+
+      <section className="learn">
+        <div className="example">
+          <div className="example-text">
+            <h2>Inline Content</h2>
+            <p>
+              A separate parser for rich content within strings. Use{' '}
+              <code>parseContentValue()</code> on string values to get
+              structured content arrays. Edit the strings below to try it.
+            </p>
+          </div>
+          <div className="inline-examples">
+            {inlineExamples.map((ex, i) => (
+              <InlineContentPlayground key={i} initial={ex} />
+            ))}
+          </div>
+        </div>
       </section>
 
       <section className="playground-section" id="playground">

@@ -11,6 +11,13 @@ export interface ADMLResult {
   [key: string]: any;
 }
 
+export interface ContentItem {
+  type: string;
+  value: string;
+  mods: string[];
+  props: Record<string, any>;
+}
+
 /**
  * Helper function to strip multiline comments from a line
  */
@@ -488,6 +495,349 @@ function isContentArray(arr: any[]): boolean {
 }
 
 /**
+ * Apply text substitutions: " -> \u201C, -- -> \u2013
+ * Skips substitution when escaped with \
+ */
+function applySubstitutions(text: string): string {
+  let result = '';
+  let i = 0;
+
+  while (i < text.length) {
+    // Escaped quote: \" stays as literal "
+    if (text[i] === '\\' && i + 1 < text.length && text[i + 1] === '"') {
+      result += '"';
+      i += 2;
+      continue;
+    }
+
+    // En dash: -- -> \u2013
+    if (text[i] === '-' && i + 1 < text.length && text[i + 1] === '-') {
+      result += '\u2013';
+      i += 2;
+      continue;
+    }
+
+    // Smart quote: " -> \u201C (always left/opening)
+    if (text[i] === '"') {
+      result += '\u201C';
+      i++;
+      continue;
+    }
+
+    result += text[i];
+    i++;
+  }
+
+  return result;
+}
+
+/**
+ * Reverse text substitutions for stringify: \u201C -> ", \u2013 -> --
+ * Also escapes [ and ] in plain text
+ */
+function reverseSubstitutions(text: string): string {
+  let result = '';
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '\u201C') { result += '"'; continue; }
+    if (ch === '\u2013') { result += '--'; continue; }
+    if (ch === '[' || ch === ']') { result += '\\' + ch; continue; }
+    result += ch;
+  }
+  return result;
+}
+
+/**
+ * Split string by | respecting \| escapes
+ */
+function splitByPipe(content: string): string[] {
+  const parts: string[] = [];
+  let current = '';
+  let i = 0;
+
+  while (i < content.length) {
+    if (content[i] === '\\' && i + 1 < content.length && content[i + 1] === '|') {
+      current += '|';
+      i += 2;
+      continue;
+    }
+    if (content[i] === '|') {
+      parts.push(current);
+      current = '';
+      i++;
+      continue;
+    }
+    current += content[i];
+    i++;
+  }
+  parts.push(current);
+
+  return parts;
+}
+
+/**
+ * Check if a string looks like a link (starts with /, http://, https://, or @)
+ */
+function isLinkLike(value: string): boolean {
+  const trimmed = value.trim();
+  return (
+    trimmed.startsWith('/') ||
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('@')
+  );
+}
+
+/**
+ * Parse the content inside brackets into a ContentItem
+ */
+function parseBracketContent(content: string): ContentItem {
+  // Special cases
+  if (content === '') {
+    return { type: 'html', value: '&nbsp;', mods: [], props: {} };
+  }
+  if (content === '/') {
+    return { type: 'html', value: '<br>', mods: [], props: {} };
+  }
+  if (content === '-') {
+    return { type: 'html', value: '&shy;', mods: [], props: {} };
+  }
+
+  // Split by pipe
+  const params = splitByPipe(content);
+
+  // First param is the value
+  let value = params[0].trim();
+  let type: string | null = null;
+  let mods: string[] = [];
+  const props: Record<string, any> = {};
+
+  // Process remaining params
+  for (let p = 1; p < params.length; p++) {
+    const param = params[p].trim();
+
+    // Type/mods param: starts with #
+    if (param.startsWith('#')) {
+      const withoutHash = param.substring(1);
+      const parts = withoutHash.split('.');
+      type = parts[0];
+      mods = parts.slice(1);
+      continue;
+    }
+
+    // Link-like detection: only for 2nd param (index 1)
+    if (p === 1 && isLinkLike(param)) {
+      if (!type) type = 'a';
+      props.href = param;
+      continue;
+    }
+
+    // Props param: key: value
+    const colonIdx = param.indexOf(':');
+    if (colonIdx > 0) {
+      const propKey = param.substring(0, colonIdx).trim();
+      const propValue = param.substring(colonIdx + 1).trim();
+      setByPath(props as ADMLResult, propKey, parseValue(propValue));
+      continue;
+    }
+  }
+
+  // Default type
+  if (!type) {
+    if (value.trimStart().startsWith('<')) {
+      type = 'html';
+    } else {
+      type = 'strong';
+    }
+  }
+
+  // Apply substitutions to value (skip for html)
+  if (type !== 'html') {
+    value = applySubstitutions(value);
+  }
+
+  return { type, value, mods, props };
+}
+
+/**
+ * Parse a string containing inline content markup into a content array
+ */
+export function parseContentValue(input: string): ContentItem[] {
+  if (!input) return [];
+
+  const items: ContentItem[] = [];
+  let i = 0;
+  let textBuffer = '';
+
+  while (i < input.length) {
+    // Escaped bracket in plain text
+    if (input[i] === '\\' && i + 1 < input.length && (input[i + 1] === '[' || input[i + 1] === ']')) {
+      textBuffer += input[i + 1];
+      i += 2;
+      continue;
+    }
+
+    // Start of bracket segment
+    if (input[i] === '[') {
+      // Flush accumulated plain text
+      if (textBuffer) {
+        items.push({ type: 'text', value: applySubstitutions(textBuffer), mods: [], props: {} });
+        textBuffer = '';
+      }
+
+      // Collect until matching ]
+      i++; // skip [
+      let bracketContent = '';
+      while (i < input.length) {
+        if (input[i] === '\\' && i + 1 < input.length && input[i + 1] === ']') {
+          bracketContent += ']';
+          i += 2;
+          continue;
+        }
+        if (input[i] === '\\' && i + 1 < input.length && input[i + 1] === '|') {
+          bracketContent += '\\|'; // preserve escape for splitByPipe
+          i += 2;
+          continue;
+        }
+        if (input[i] === ']') {
+          i++; // skip ]
+          break;
+        }
+        bracketContent += input[i];
+        i++;
+      }
+
+      items.push(parseBracketContent(bracketContent));
+      continue;
+    }
+
+    textBuffer += input[i];
+    i++;
+  }
+
+  // Flush remaining text
+  if (textBuffer) {
+    items.push({ type: 'text', value: applySubstitutions(textBuffer), mods: [], props: {} });
+  }
+
+  return items;
+}
+
+/**
+ * Flatten nested props object into dot-notation keys
+ */
+function flattenProps(props: Record<string, any>, prefix: string = ''): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const [key, val] of Object.entries(props)) {
+    const fullKey = prefix ? `${prefix}.${key}` : key;
+    if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+      Object.assign(result, flattenProps(val, fullKey));
+    } else {
+      result[fullKey] = String(val);
+    }
+  }
+  return result;
+}
+
+/**
+ * Check if type needs explicit #type param (differs from auto-detected default)
+ */
+function needsExplicitType(item: ContentItem): boolean {
+  if (item.mods.length > 0) return true;
+
+  const isHtmlValue = typeof item.value === 'string' && item.value.trimStart().startsWith('<');
+  const hasLinkHref = item.props && 'href' in item.props && typeof item.props.href === 'string' && isLinkLike(item.props.href);
+
+  if (hasLinkHref && item.type === 'a') return false;
+  if (isHtmlValue && item.type === 'html') return false;
+  if (!isHtmlValue && !hasLinkHref && item.type === 'strong') return false;
+
+  return true;
+}
+
+/**
+ * Check if item can use href shorthand (link-like href as 2nd pipe param)
+ */
+function canUseHrefShorthand(item: ContentItem): boolean {
+  return (
+    item.props != null &&
+    'href' in item.props &&
+    typeof item.props.href === 'string' &&
+    isLinkLike(item.props.href) &&
+    item.type === 'a'
+  );
+}
+
+/**
+ * Escape pipe characters in a value inside brackets
+ */
+function escapeValueForBracket(value: string): string {
+  let result = '';
+  for (let i = 0; i < value.length; i++) {
+    if (value[i] === '|') { result += '\\|'; continue; }
+    result += value[i];
+  }
+  return result;
+}
+
+/**
+ * Convert a content array back to an inline content string
+ */
+export function stringifyContentValue(content: ContentItem[]): string {
+  if (!content || content.length === 0) return '';
+
+  let result = '';
+
+  for (const item of content) {
+    // Plain text segment
+    if (item.type === 'text' && item.mods.length === 0 && (!item.props || Object.keys(item.props).length === 0)) {
+      result += reverseSubstitutions(item.value);
+      continue;
+    }
+
+    // Special HTML cases
+    if (item.type === 'html' && item.mods.length === 0 && (!item.props || Object.keys(item.props).length === 0)) {
+      if (item.value === '&nbsp;') { result += '[]'; continue; }
+      if (item.value === '<br>') { result += '[/]'; continue; }
+      if (item.value === '&shy;') { result += '[-]'; continue; }
+    }
+
+    // Build bracketed segment
+    const params: string[] = [];
+
+    // First param: the value
+    params.push(escapeValueForBracket(item.value));
+
+    // Link shorthand: href as 2nd param
+    const useHrefShorthand = canUseHrefShorthand(item);
+    if (useHrefShorthand) {
+      params.push(item.props.href);
+    }
+
+    // Type param if needed
+    if (needsExplicitType(item)) {
+      const typePart = item.mods.length > 0
+        ? `#${item.type}.${item.mods.join('.')}`
+        : `#${item.type}`;
+      params.push(typePart);
+    }
+
+    // Props (excluding href if used as shorthand)
+    const propsToEmit = { ...item.props };
+    if (useHrefShorthand) delete propsToEmit.href;
+
+    const flat = flattenProps(propsToEmit);
+    for (const [key, val] of Object.entries(flat)) {
+      params.push(`${key}: ${val}`);
+    }
+
+    result += '[' + params.join(' | ') + ']';
+  }
+
+  return result;
+}
+
+/**
  * Stringify a content object's type header: #type.mod1.mod2: value
  */
 function stringifyContentHeader(item: any): string {
@@ -620,4 +970,4 @@ export function stringify(data: ADMLResult, options: ADMLParseOptions = {}): str
   return lines.join('\n');
 }
 
-export default { parse, stringify };
+export default { parse, stringify, parseContentValue, stringifyContentValue };

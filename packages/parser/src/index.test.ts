@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parse, stringify } from './index';
+import { parse, stringify, parseContentValue, stringifyContentValue } from './index';
 
 describe('ADML Parser', () => {
   describe('parse', () => {
@@ -1295,6 +1295,357 @@ content: [[
         value: 'override value',
         mods: ['mod1', 'mod2'],
         props: {}
+      });
+    });
+  });
+
+  describe('inline content parser', () => {
+    describe('parseContentValue basics', () => {
+      it('should return empty array for empty string', () => {
+        expect(parseContentValue('')).toEqual([]);
+      });
+
+      it('should parse plain text as single text item', () => {
+        expect(parseContentValue('A normal string')).toEqual([
+          { type: 'text', value: 'A normal string', mods: [], props: {} }
+        ]);
+      });
+
+      it('should parse bracketed text as strong by default', () => {
+        expect(parseContentValue('A [strong part] of string')).toEqual([
+          { type: 'text', value: 'A ', mods: [], props: {} },
+          { type: 'strong', value: 'strong part', mods: [], props: {} },
+          { type: 'text', value: ' of string', mods: [], props: {} }
+        ]);
+      });
+
+      it('should handle multiple brackets', () => {
+        expect(parseContentValue('Hello [world] and [universe]')).toEqual([
+          { type: 'text', value: 'Hello ', mods: [], props: {} },
+          { type: 'strong', value: 'world', mods: [], props: {} },
+          { type: 'text', value: ' and ', mods: [], props: {} },
+          { type: 'strong', value: 'universe', mods: [], props: {} }
+        ]);
+      });
+
+      it('should handle adjacent brackets', () => {
+        expect(parseContentValue('[a][b]')).toEqual([
+          { type: 'strong', value: 'a', mods: [], props: {} },
+          { type: 'strong', value: 'b', mods: [], props: {} }
+        ]);
+      });
+
+      it('should handle bracket at start of string', () => {
+        expect(parseContentValue('[bold] is first')).toEqual([
+          { type: 'strong', value: 'bold', mods: [], props: {} },
+          { type: 'text', value: ' is first', mods: [], props: {} }
+        ]);
+      });
+
+      it('should handle bracket at end of string', () => {
+        expect(parseContentValue('last is [bold]')).toEqual([
+          { type: 'text', value: 'last is ', mods: [], props: {} },
+          { type: 'strong', value: 'bold', mods: [], props: {} }
+        ]);
+      });
+
+      it('should handle only a bracket', () => {
+        expect(parseContentValue('[just this]')).toEqual([
+          { type: 'strong', value: 'just this', mods: [], props: {} }
+        ]);
+      });
+    });
+
+    describe('parseContentValue special cases', () => {
+      it('should parse [] as non-breaking space', () => {
+        expect(parseContentValue('[]')).toEqual([
+          { type: 'html', value: '&nbsp;', mods: [], props: {} }
+        ]);
+      });
+
+      it('should parse [/] as line break', () => {
+        expect(parseContentValue('[/]')).toEqual([
+          { type: 'html', value: '<br>', mods: [], props: {} }
+        ]);
+      });
+
+      it('should parse [-] as soft hyphen', () => {
+        expect(parseContentValue('[-]')).toEqual([
+          { type: 'html', value: '&shy;', mods: [], props: {} }
+        ]);
+      });
+
+      it('should handle special cases within text', () => {
+        expect(parseContentValue('word[]word')).toEqual([
+          { type: 'text', value: 'word', mods: [], props: {} },
+          { type: 'html', value: '&nbsp;', mods: [], props: {} },
+          { type: 'text', value: 'word', mods: [], props: {} }
+        ]);
+      });
+    });
+
+    describe('parseContentValue type detection', () => {
+      it('should detect HTML value and use html type', () => {
+        expect(parseContentValue('Have a look at this [<code>example</code>]')).toEqual([
+          { type: 'text', value: 'Have a look at this ', mods: [], props: {} },
+          { type: 'html', value: '<code>example</code>', mods: [], props: {} }
+        ]);
+      });
+
+      it('should allow overriding HTML detection with explicit type', () => {
+        expect(parseContentValue('[<code>example</code> | #text]')).toEqual([
+          { type: 'text', value: '<code>example</code>', mods: [], props: {} }
+        ]);
+      });
+
+      it('should detect link-like second param and create anchor', () => {
+        expect(parseContentValue('[click here|/about/links]')).toEqual([
+          { type: 'a', value: 'click here', mods: [], props: { href: '/about/links' } }
+        ]);
+      });
+
+      it('should detect https links', () => {
+        expect(parseContentValue('[click|https://svt.se]')).toEqual([
+          { type: 'a', value: 'click', mods: [], props: { href: 'https://svt.se' } }
+        ]);
+      });
+
+      it('should detect http links', () => {
+        expect(parseContentValue('[click|http://svt.se]')).toEqual([
+          { type: 'a', value: 'click', mods: [], props: { href: 'http://svt.se' } }
+        ]);
+      });
+
+      it('should detect mailto links with @', () => {
+        expect(parseContentValue('[email|@mailto:mail@to.me]')).toEqual([
+          { type: 'a', value: 'email', mods: [], props: { href: '@mailto:mail@to.me' } }
+        ]);
+      });
+
+      it('should parse explicit type with #', () => {
+        expect(parseContentValue('[text | #em]')).toEqual([
+          { type: 'em', value: 'text', mods: [], props: {} }
+        ]);
+      });
+
+      it('should parse type with mods', () => {
+        expect(parseContentValue('[the value | #em.underlined]')).toEqual([
+          { type: 'em', value: 'the value', mods: ['underlined'], props: {} }
+        ]);
+      });
+
+      it('should handle link with explicit type override', () => {
+        expect(parseContentValue('[click|https://x.com|#button]')).toEqual([
+          { type: 'button', value: 'click', mods: [], props: { href: 'https://x.com' } }
+        ]);
+      });
+    });
+
+    describe('parseContentValue props', () => {
+      it('should parse props with key: value', () => {
+        expect(parseContentValue('[the value | #em.underlined | style.color:red | id: 1]')).toEqual([
+          {
+            type: 'em',
+            value: 'the value',
+            mods: ['underlined'],
+            props: { style: { color: 'red' }, id: 1 }
+          }
+        ]);
+      });
+
+      it('should parse multiple props', () => {
+        expect(parseContentValue('[text | #span | class: foo | id: bar]')).toEqual([
+          { type: 'span', value: 'text', mods: [], props: { class: 'foo', id: 'bar' } }
+        ]);
+      });
+
+      it('should parse dot notation props as nested objects', () => {
+        expect(parseContentValue('[text | #span | style.color: red]')).toEqual([
+          { type: 'span', value: 'text', mods: [], props: { style: { color: 'red' } } }
+        ]);
+      });
+
+      it('should produce same result as explicit href prop', () => {
+        const shorthand = parseContentValue('[click here|/about/links]');
+        const explicit = parseContentValue('[ click here| #a | href:/about/links ]');
+        expect(shorthand).toEqual(explicit);
+      });
+    });
+
+    describe('parseContentValue substitutions', () => {
+      it('should replace " with left double quote', () => {
+        const result = parseContentValue('He said "hello"');
+        expect(result[0].value).toBe('He said \u201Chello\u201C');
+      });
+
+      it('should replace -- with en dash', () => {
+        const result = parseContentValue('2020--2025');
+        expect(result[0].value).toBe('2020\u20132025');
+      });
+
+      it('should preserve escaped quotes as literal "', () => {
+        const result = parseContentValue('\\" is the sign for inch');
+        expect(result[0].value).toBe('" is the sign for inch');
+      });
+
+      it('should skip substitutions for html type', () => {
+        const result = parseContentValue('[<p>"hello"</p>]');
+        expect(result[0].value).toBe('<p>"hello"</p>');
+        expect(result[0].type).toBe('html');
+      });
+
+      it('should apply substitutions to bracket value when not html', () => {
+        const result = parseContentValue('[said "hello" | #em]');
+        expect(result[0].value).toBe('said \u201Chello\u201C');
+      });
+    });
+
+    describe('parseContentValue escaping', () => {
+      it('should handle escaped brackets in plain text', () => {
+        const result = parseContentValue('a \\[not bracket\\] b');
+        expect(result).toEqual([
+          { type: 'text', value: 'a [not bracket] b', mods: [], props: {} }
+        ]);
+      });
+
+      it('should handle escaped pipe inside brackets', () => {
+        const result = parseContentValue('[a\\|b]');
+        expect(result).toEqual([
+          { type: 'strong', value: 'a|b', mods: [], props: {} }
+        ]);
+      });
+    });
+
+    describe('stringifyContentValue', () => {
+      it('should return empty string for empty array', () => {
+        expect(stringifyContentValue([])).toBe('');
+      });
+
+      it('should stringify plain text without brackets', () => {
+        const result = stringifyContentValue([
+          { type: 'text', value: 'Hello world', mods: [], props: {} }
+        ]);
+        expect(result).toBe('Hello world');
+      });
+
+      it('should stringify strong as [value]', () => {
+        const result = stringifyContentValue([
+          { type: 'strong', value: 'bold', mods: [], props: {} }
+        ]);
+        expect(result).toBe('[bold]');
+      });
+
+      it('should stringify special HTML as [], [/], [-]', () => {
+        expect(stringifyContentValue([
+          { type: 'html', value: '&nbsp;', mods: [], props: {} }
+        ])).toBe('[]');
+        expect(stringifyContentValue([
+          { type: 'html', value: '<br>', mods: [], props: {} }
+        ])).toBe('[/]');
+        expect(stringifyContentValue([
+          { type: 'html', value: '&shy;', mods: [], props: {} }
+        ])).toBe('[-]');
+      });
+
+      it('should stringify link with href shorthand', () => {
+        const result = stringifyContentValue([
+          { type: 'a', value: 'click', mods: [], props: { href: '/about' } }
+        ]);
+        expect(result).toBe('[click | /about]');
+      });
+
+      it('should stringify custom type with #type', () => {
+        const result = stringifyContentValue([
+          { type: 'em', value: 'text', mods: [], props: {} }
+        ]);
+        expect(result).toBe('[text | #em]');
+      });
+
+      it('should stringify type with mods', () => {
+        const result = stringifyContentValue([
+          { type: 'em', value: 'text', mods: ['italic', 'underline'], props: {} }
+        ]);
+        expect(result).toBe('[text | #em.italic.underline]');
+      });
+
+      it('should stringify props as key: value params', () => {
+        const result = stringifyContentValue([
+          { type: 'span', value: 'text', mods: [], props: { class: 'foo' } }
+        ]);
+        expect(result).toBe('[text | #span | class: foo]');
+      });
+
+      it('should stringify nested props with dot notation', () => {
+        const result = stringifyContentValue([
+          { type: 'span', value: 'text', mods: [], props: { style: { color: 'red' } } }
+        ]);
+        expect(result).toBe('[text | #span | style.color: red]');
+      });
+
+      it('should stringify mixed content', () => {
+        const result = stringifyContentValue([
+          { type: 'text', value: 'Hello ', mods: [], props: {} },
+          { type: 'strong', value: 'world', mods: [], props: {} },
+          { type: 'text', value: '!', mods: [], props: {} }
+        ]);
+        expect(result).toBe('Hello [world]!');
+      });
+
+      it('should escape brackets in text segments', () => {
+        const result = stringifyContentValue([
+          { type: 'text', value: 'a [bracket] b', mods: [], props: {} }
+        ]);
+        expect(result).toBe('a \\[bracket\\] b');
+      });
+    });
+
+    describe('roundtrip', () => {
+      it('should roundtrip plain text', () => {
+        const input = 'Hello world';
+        const parsed = parseContentValue(input);
+        const stringified = stringifyContentValue(parsed);
+        const reparsed = parseContentValue(stringified);
+        expect(reparsed).toEqual(parsed);
+      });
+
+      it('should roundtrip bracketed content', () => {
+        const input = 'A [strong part] of string';
+        const parsed = parseContentValue(input);
+        const stringified = stringifyContentValue(parsed);
+        const reparsed = parseContentValue(stringified);
+        expect(reparsed).toEqual(parsed);
+      });
+
+      it('should roundtrip special cases', () => {
+        const input = 'word[]word[/]end[-]hy';
+        const parsed = parseContentValue(input);
+        const stringified = stringifyContentValue(parsed);
+        const reparsed = parseContentValue(stringified);
+        expect(reparsed).toEqual(parsed);
+      });
+
+      it('should roundtrip link content', () => {
+        const input = '[click here|/about/links]';
+        const parsed = parseContentValue(input);
+        const stringified = stringifyContentValue(parsed);
+        const reparsed = parseContentValue(stringified);
+        expect(reparsed).toEqual(parsed);
+      });
+
+      it('should roundtrip complex content with type, mods, and props', () => {
+        const input = '[the value | #em.underlined | style.color: red | id: 1]';
+        const parsed = parseContentValue(input);
+        const stringified = stringifyContentValue(parsed);
+        const reparsed = parseContentValue(stringified);
+        expect(reparsed).toEqual(parsed);
+      });
+
+      it('should roundtrip mixed content', () => {
+        const input = 'Hello [world | #em] and [click|/home] done';
+        const parsed = parseContentValue(input);
+        const stringified = stringifyContentValue(parsed);
+        const reparsed = parseContentValue(stringified);
+        expect(reparsed).toEqual(parsed);
       });
     });
   });

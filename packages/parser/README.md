@@ -325,6 +325,59 @@ Inline multiline comments are also supported:
 title: Test /* inline comment */ value
 ```
 
+### Inline content
+
+A separate parser for rich inline content within string values. Use `parseContentValue()` on any string to get a content array with the same shape as content arrays (`{ type, value, mods, props }`).
+
+```typescript
+import { parseContentValue } from '@adml/parser';
+
+parseContentValue('A [strong part] of string');
+// [
+//   { type: 'text', value: 'A ', mods: [], props: {} },
+//   { type: 'strong', value: 'strong part', mods: [], props: {} },
+//   { type: 'text', value: ' of string', mods: [], props: {} }
+// ]
+```
+
+**Brackets `[...]`** mark inline content. The default type is `"strong"`. Use `|` to separate parameters:
+
+```
+[value | #type.mod1.mod2 | prop: value | prop2: value2]
+```
+
+- First parameter is always the value
+- `#type.mod` sets the type and modifiers
+- Other parameters are props (`key: value`, supports dot notation)
+
+**Links:** If the second parameter is link-like (starts with `/`, `http://`, `https://`, or `@`), the type defaults to `"a"` and the link becomes an `href` prop:
+
+```typescript
+parseContentValue('[click here|/about]');
+// [{ type: 'a', value: 'click here', mods: [], props: { href: '/about' } }]
+```
+
+**HTML detection:** If the value starts with `<`, the default type is `"html"`:
+
+```typescript
+parseContentValue('[<code>example</code>]');
+// [{ type: 'html', value: '<code>example</code>', mods: [], props: {} }]
+```
+
+**Special cases:**
+- `[]` → `{ type: 'html', value: '&nbsp;' }` (non-breaking space)
+- `[/]` → `{ type: 'html', value: '<br>' }` (line break)
+- `[-]` → `{ type: 'html', value: '&shy;' }` (soft hyphen)
+
+**Text substitutions** (applied to non-HTML content):
+- `"` → `\u201C` (left double quote)
+- `--` → `\u2013` (en dash)
+- `\"` → literal `"` (escaped, no substitution)
+
+**Escaping:** Use `\` to escape special characters:
+- `\[` and `\]` for literal brackets in plain text
+- `\|` for literal pipe inside brackets
+
 ## API
 
 ### `parse(input: string, options?: ADMLParseOptions): ADMLResult`
@@ -334,6 +387,14 @@ Parses ADML markup string to JSON.
 ### `stringify(data: ADMLResult, options?: ADMLParseOptions): string`
 
 Converts JSON back to ADML format.
+
+### `parseContentValue(input: string): ContentItem[]`
+
+Parses a string containing inline content markup into a content array. Each item has `{ type, value, mods, props }`.
+
+### `stringifyContentValue(content: ContentItem[]): string`
+
+Converts a content array back to an inline content string.
 
 ## License
 
