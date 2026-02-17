@@ -1,0 +1,57 @@
+{
+  "Key-Value Pair": {
+    "prefix": "kv",
+    "body": ["${1:key}: ${2:value}"],
+    "description": "Simple key-value pair"
+  },
+  "Object Block": {
+    "prefix": "obj",
+    "body": [
+      "${1:key}: {",
+      "  $0",
+      "}"
+    ],
+    "description": "Object block with braces"
+  },
+  "Array Block": {
+    "prefix": "arr",
+    "body": [
+      "${1:key}: [",
+      "  $0",
+      "]"
+    ],
+    "description": "Array block"
+  },
+  "Content Array": {
+    "prefix": "carr",
+    "body": [
+      "${1:key}: [[",
+      "  $0",
+      "]]"
+    ],
+    "description": "Content array block"
+  },
+  "Multiline String": {
+    "prefix": "ml",
+    "body": [
+      "${1:key}::",
+      "$0",
+      "::"
+    ],
+    "description": "Multiline string value"
+  },
+  "Content Type Header": {
+    "prefix": "#",
+    "body": ["#${1:type}: ${2:value}"],
+    "description": "Content type header"
+  },
+  "Content Props Block": {
+    "prefix": "props",
+    "body": [
+      "<#${1:type}: ${2:value}",
+      "  $0",
+      ">"
+    ],
+    "description": "Content entry with props block"
+  }
+}

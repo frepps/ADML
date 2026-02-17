@@ -143,3 +143,5 @@ vite.config.ts.timestamp-*
 *.swp
 *.swo
 anteckningar
+packages/.DS_Store
+.DS_Store

@@ -2,7 +2,7 @@
   "name": "adml-vscode",
   "displayName": "ADML",
   "description": "Language support for ADML (Article Data Markup Language)",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "publisher": "adml",
   "license": "MIT",
   "engines": {
@@ -32,6 +32,12 @@
         "language": "adml",
         "scopeName": "source.adml",
         "path": "./syntaxes/adml.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "adml",
+        "path": "./snippets/adml.json"
       }
     ]
   },

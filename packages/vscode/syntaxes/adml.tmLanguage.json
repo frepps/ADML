@@ -37,10 +37,10 @@
       "end": "^\\s*(::)\\s*$",
       "beginCaptures": {
         "2": { "name": "entity.name.tag.adml" },
-        "3": { "name": "keyword.operator.multiline.adml" }
+        "3": { "name": "keyword.control.adml" }
       },
       "endCaptures": {
-        "1": { "name": "keyword.operator.multiline.adml" }
+        "1": { "name": "keyword.control.adml" }
       },
       "contentName": "string.unquoted.multiline.adml"
     },
@@ -87,6 +87,7 @@
       },
       "patterns": [
         { "include": "#comments" },
+        { "include": "#multiline-string" },
         { "include": "#nested-content-array" },
         { "include": "#props-key-content-array" },
         { "include": "#props-key-array" },
@@ -182,7 +183,7 @@
       "captures": {
         "2": { "name": "entity.name.tag.adml" },
         "3": { "name": "punctuation.separator.key-value.adml" },
-        "4": { "patterns": [{ "include": "#value-types" }] }
+        "4": { "patterns": [{ "include": "#inline-content" }, { "include": "#value-types" }] }
       }
     },
 
@@ -260,6 +261,7 @@
 
     "object-body": {
       "patterns": [
+        { "include": "#comments" },
         { "include": "#multiline-string" },
         { "include": "#key-content-array" },
         { "include": "#key-array" },
