@@ -955,8 +955,8 @@ content: [[
 ]]`.trim();
       const result = parse(input);
       expect(result.content).toEqual([
-        { type: 'heading', value: 'Welcome', mods: [], props: {} },
-        { type: 'image', value: 'photo.jpg', mods: [], props: {} },
+        { type: 'heading', value: 'Welcome' },
+        { type: 'image', value: 'photo.jpg' },
       ]);
     });
 
@@ -967,7 +967,7 @@ content: [[
 ]]`.trim();
       const result = parse(input);
       expect(result.content[0]).toEqual({
-        type: 'heading', value: 'Title', mods: ['large', 'bold'], props: {}
+        type: 'heading', value: 'Title', mods: ['large', 'bold']
       });
     });
 
@@ -978,7 +978,7 @@ content: [[
 ]]`.trim();
       const result = parse(input);
       expect(result.content[0]).toEqual({
-        type: 'p', value: 'This is a paragraph.', mods: [], props: {}
+        type: 'p', value: 'This is a paragraph.'
       });
     });
 
@@ -1006,7 +1006,7 @@ content: [[
 ]]`.trim();
       const result = parse(input);
       expect(result.content[0].value).toBe('Overridden');
-      expect(result.content[0].props.value).toBeUndefined();
+      expect(result.content[0].props?.value).toBeUndefined();
     });
 
     it('should allow props mods key to override content mods', () => {
@@ -1021,7 +1021,7 @@ content: [[
 ]]`.trim();
       const result = parse(input);
       expect(result.content[0].mods).toEqual(['large', 'bold']);
-      expect(result.content[0].props.mods).toBeUndefined();
+      expect(result.content[0].props?.mods).toBeUndefined();
     });
 
     it('should parse nested content arrays as value', () => {
@@ -1038,8 +1038,8 @@ content: [[
       expect(result.content[0].type).toBe('div');
       expect(result.content[0].mods).toEqual(['border']);
       expect(result.content[0].value).toEqual([
-        { type: 'h3', value: 'Hello fellow coder', mods: [], props: {} },
-        { type: 'p', value: 'This is awesome!', mods: [], props: {} },
+        { type: 'h3', value: 'Hello fellow coder' },
+        { type: 'p', value: 'This is awesome!' },
       ]);
       expect(result.content[0].props).toEqual({
         style: { color: 'blue' }
@@ -1058,8 +1058,8 @@ content: [[
 ]]`.trim();
       const result = parse(input);
       expect(result.content[0].props.children).toEqual([
-        { type: 'heading', value: 'Nested Title', mods: [], props: {} },
-        { type: 'p', value: 'Some paragraph text.', mods: [], props: {} },
+        { type: 'heading', value: 'Nested Title' },
+        { type: 'p', value: 'Some paragraph text.' },
       ]);
     });
 
@@ -1100,8 +1100,8 @@ article: {
 }`.trim();
       const result = parse(input);
       expect(result.article.body).toEqual([
-        { type: 'heading', value: 'Introduction', mods: [], props: {} },
-        { type: 'p', value: 'Some text here.', mods: [], props: {} },
+        { type: 'heading', value: 'Introduction' },
+        { type: 'p', value: 'Some text here.' },
       ]);
     });
 
@@ -1112,7 +1112,7 @@ page.content: [[
 ]]`.trim();
       const result = parse(input);
       expect(result.page.content).toEqual([
-        { type: 'heading', value: 'Hello', mods: [], props: {} },
+        { type: 'heading', value: 'Hello' },
       ]);
     });
 
@@ -1141,7 +1141,7 @@ content: [[
 ]]`.trim();
       const result = parse(input);
       expect(result.content[0].type).toBe('divider');
-      expect(result.content[0].value).toBe('');
+      expect(result.content[0].value).toBeUndefined();
       expect(result.content[0].props).toEqual({ width: 100 });
     });
 
@@ -1154,7 +1154,7 @@ content: [[
 ]]`.trim();
       const result = parse(input);
       expect(result.content[0].type).toBe('divider');
-      expect(result.content[0].value).toBe('');
+      expect(result.content[0].value).toBeUndefined();
     });
 
     it('should parse content arrays inside regular arrays', () => {
@@ -1166,15 +1166,15 @@ items: [
 ]`.trim();
       const result = parse(input);
       expect(result.items[0]).toEqual([
-        { type: 'heading', value: 'Hello', mods: [], props: {} },
+        { type: 'heading', value: 'Hello' },
       ]);
     });
 
     it('should stringify content arrays', () => {
       const data = {
         content: [
-          { type: 'heading', value: 'Title', mods: [], props: {} },
-          { type: 'p', value: 'Body text', mods: [], props: {} },
+          { type: 'heading', value: 'Title' },
+          { type: 'p', value: 'Body text' },
         ]
       };
       const result = stringify(data);
@@ -1187,7 +1187,7 @@ items: [
     it('should stringify content entries with modifiers', () => {
       const data = {
         content: [
-          { type: 'heading', value: 'Title', mods: ['large', 'bold'], props: {} },
+          { type: 'heading', value: 'Title', mods: ['large', 'bold'] },
         ]
       };
       const result = stringify(data);
@@ -1210,7 +1210,7 @@ items: [
     it('should stringify plain text entries without # prefix', () => {
       const data = {
         content: [
-          { type: 'p', value: 'Just a paragraph.', mods: [], props: {} },
+          { type: 'p', value: 'Just a paragraph.' },
         ]
       };
       const result = stringify(data);
@@ -1293,8 +1293,7 @@ content: [[
       expect(result.content[0]).toEqual({
         type: 'type',
         value: 'override value',
-        mods: ['mod1', 'mod2'],
-        props: {}
+        mods: ['mod1', 'mod2']
       });
     });
   });
@@ -1307,51 +1306,51 @@ content: [[
 
       it('should parse plain text as single text item', () => {
         expect(parseContentValue('A normal string')).toEqual([
-          { type: 'text', value: 'A normal string', mods: [], props: {} }
+          { type: 'text', value: 'A normal string' }
         ]);
       });
 
       it('should parse bracketed text as strong by default', () => {
         expect(parseContentValue('A [strong part] of string')).toEqual([
-          { type: 'text', value: 'A ', mods: [], props: {} },
-          { type: 'strong', value: 'strong part', mods: [], props: {} },
-          { type: 'text', value: ' of string', mods: [], props: {} }
+          { type: 'text', value: 'A ' },
+          { type: 'strong', value: 'strong part' },
+          { type: 'text', value: ' of string' }
         ]);
       });
 
       it('should handle multiple brackets', () => {
         expect(parseContentValue('Hello [world] and [universe]')).toEqual([
-          { type: 'text', value: 'Hello ', mods: [], props: {} },
-          { type: 'strong', value: 'world', mods: [], props: {} },
-          { type: 'text', value: ' and ', mods: [], props: {} },
-          { type: 'strong', value: 'universe', mods: [], props: {} }
+          { type: 'text', value: 'Hello ' },
+          { type: 'strong', value: 'world' },
+          { type: 'text', value: ' and ' },
+          { type: 'strong', value: 'universe' }
         ]);
       });
 
       it('should handle adjacent brackets', () => {
         expect(parseContentValue('[a][b]')).toEqual([
-          { type: 'strong', value: 'a', mods: [], props: {} },
-          { type: 'strong', value: 'b', mods: [], props: {} }
+          { type: 'strong', value: 'a' },
+          { type: 'strong', value: 'b' }
         ]);
       });
 
       it('should handle bracket at start of string', () => {
         expect(parseContentValue('[bold] is first')).toEqual([
-          { type: 'strong', value: 'bold', mods: [], props: {} },
-          { type: 'text', value: ' is first', mods: [], props: {} }
+          { type: 'strong', value: 'bold' },
+          { type: 'text', value: ' is first' }
         ]);
       });
 
       it('should handle bracket at end of string', () => {
         expect(parseContentValue('last is [bold]')).toEqual([
-          { type: 'text', value: 'last is ', mods: [], props: {} },
-          { type: 'strong', value: 'bold', mods: [], props: {} }
+          { type: 'text', value: 'last is ' },
+          { type: 'strong', value: 'bold' }
         ]);
       });
 
       it('should handle only a bracket', () => {
         expect(parseContentValue('[just this]')).toEqual([
-          { type: 'strong', value: 'just this', mods: [], props: {} }
+          { type: 'strong', value: 'just this' }
         ]);
       });
     });
@@ -1359,27 +1358,27 @@ content: [[
     describe('parseContentValue special cases', () => {
       it('should parse [] as non-breaking space', () => {
         expect(parseContentValue('[]')).toEqual([
-          { type: 'html', value: '&nbsp;', mods: [], props: {} }
+          { type: 'html', value: '&nbsp;' }
         ]);
       });
 
       it('should parse [/] as line break', () => {
         expect(parseContentValue('[/]')).toEqual([
-          { type: 'html', value: '<br>', mods: [], props: {} }
+          { type: 'html', value: '<br>' }
         ]);
       });
 
       it('should parse [-] as soft hyphen', () => {
         expect(parseContentValue('[-]')).toEqual([
-          { type: 'html', value: '&shy;', mods: [], props: {} }
+          { type: 'html', value: '&shy;' }
         ]);
       });
 
       it('should handle special cases within text', () => {
         expect(parseContentValue('word[]word')).toEqual([
-          { type: 'text', value: 'word', mods: [], props: {} },
-          { type: 'html', value: '&nbsp;', mods: [], props: {} },
-          { type: 'text', value: 'word', mods: [], props: {} }
+          { type: 'text', value: 'word' },
+          { type: 'html', value: '&nbsp;' },
+          { type: 'text', value: 'word' }
         ]);
       });
     });
@@ -1387,56 +1386,56 @@ content: [[
     describe('parseContentValue type detection', () => {
       it('should detect HTML value and use html type', () => {
         expect(parseContentValue('Have a look at this [<code>example</code>]')).toEqual([
-          { type: 'text', value: 'Have a look at this ', mods: [], props: {} },
-          { type: 'html', value: '<code>example</code>', mods: [], props: {} }
+          { type: 'text', value: 'Have a look at this ' },
+          { type: 'html', value: '<code>example</code>' }
         ]);
       });
 
       it('should allow overriding HTML detection with explicit type', () => {
         expect(parseContentValue('[<code>example</code> | #text]')).toEqual([
-          { type: 'text', value: '<code>example</code>', mods: [], props: {} }
+          { type: 'text', value: '<code>example</code>' }
         ]);
       });
 
       it('should detect link-like second param and create anchor', () => {
         expect(parseContentValue('[click here|/about/links]')).toEqual([
-          { type: 'a', value: 'click here', mods: [], props: { href: '/about/links' } }
+          { type: 'a', value: 'click here', props: { href: '/about/links' } }
         ]);
       });
 
       it('should detect https links', () => {
         expect(parseContentValue('[click|https://svt.se]')).toEqual([
-          { type: 'a', value: 'click', mods: [], props: { href: 'https://svt.se' } }
+          { type: 'a', value: 'click', props: { href: 'https://svt.se' } }
         ]);
       });
 
       it('should detect http links', () => {
         expect(parseContentValue('[click|http://svt.se]')).toEqual([
-          { type: 'a', value: 'click', mods: [], props: { href: 'http://svt.se' } }
+          { type: 'a', value: 'click', props: { href: 'http://svt.se' } }
         ]);
       });
 
       it('should detect mailto links with @', () => {
         expect(parseContentValue('[email|@mailto:mail@to.me]')).toEqual([
-          { type: 'a', value: 'email', mods: [], props: { href: '@mailto:mail@to.me' } }
+          { type: 'a', value: 'email', props: { href: '@mailto:mail@to.me' } }
         ]);
       });
 
       it('should parse explicit type with #', () => {
         expect(parseContentValue('[text | #em]')).toEqual([
-          { type: 'em', value: 'text', mods: [], props: {} }
+          { type: 'em', value: 'text' }
         ]);
       });
 
       it('should parse type with mods', () => {
         expect(parseContentValue('[the value | #em.underlined]')).toEqual([
-          { type: 'em', value: 'the value', mods: ['underlined'], props: {} }
+          { type: 'em', value: 'the value', mods: ['underlined'] }
         ]);
       });
 
       it('should handle link with explicit type override', () => {
         expect(parseContentValue('[click|https://x.com|#button]')).toEqual([
-          { type: 'button', value: 'click', mods: [], props: { href: 'https://x.com' } }
+          { type: 'button', value: 'click', props: { href: 'https://x.com' } }
         ]);
       });
     });
@@ -1455,13 +1454,13 @@ content: [[
 
       it('should parse multiple props', () => {
         expect(parseContentValue('[text | #span | class: foo | id: bar]')).toEqual([
-          { type: 'span', value: 'text', mods: [], props: { class: 'foo', id: 'bar' } }
+          { type: 'span', value: 'text', props: { class: 'foo', id: 'bar' } }
         ]);
       });
 
       it('should parse dot notation props as nested objects', () => {
         expect(parseContentValue('[text | #span | style.color: red]')).toEqual([
-          { type: 'span', value: 'text', mods: [], props: { style: { color: 'red' } } }
+          { type: 'span', value: 'text', props: { style: { color: 'red' } } }
         ]);
       });
 
@@ -1504,14 +1503,14 @@ content: [[
       it('should handle escaped brackets in plain text', () => {
         const result = parseContentValue('a \\[not bracket\\] b');
         expect(result).toEqual([
-          { type: 'text', value: 'a [not bracket] b', mods: [], props: {} }
+          { type: 'text', value: 'a [not bracket] b' }
         ]);
       });
 
       it('should handle escaped pipe inside brackets', () => {
         const result = parseContentValue('[a\\|b]');
         expect(result).toEqual([
-          { type: 'strong', value: 'a|b', mods: [], props: {} }
+          { type: 'strong', value: 'a|b' }
         ]);
       });
     });
@@ -1523,77 +1522,77 @@ content: [[
 
       it('should stringify plain text without brackets', () => {
         const result = stringifyContentValue([
-          { type: 'text', value: 'Hello world', mods: [], props: {} }
+          { type: 'text', value: 'Hello world' }
         ]);
         expect(result).toBe('Hello world');
       });
 
       it('should stringify strong as [value]', () => {
         const result = stringifyContentValue([
-          { type: 'strong', value: 'bold', mods: [], props: {} }
+          { type: 'strong', value: 'bold' }
         ]);
         expect(result).toBe('[bold]');
       });
 
       it('should stringify special HTML as [], [/], [-]', () => {
         expect(stringifyContentValue([
-          { type: 'html', value: '&nbsp;', mods: [], props: {} }
+          { type: 'html', value: '&nbsp;' }
         ])).toBe('[]');
         expect(stringifyContentValue([
-          { type: 'html', value: '<br>', mods: [], props: {} }
+          { type: 'html', value: '<br>' }
         ])).toBe('[/]');
         expect(stringifyContentValue([
-          { type: 'html', value: '&shy;', mods: [], props: {} }
+          { type: 'html', value: '&shy;' }
         ])).toBe('[-]');
       });
 
       it('should stringify link with href shorthand', () => {
         const result = stringifyContentValue([
-          { type: 'a', value: 'click', mods: [], props: { href: '/about' } }
+          { type: 'a', value: 'click', props: { href: '/about' } }
         ]);
         expect(result).toBe('[click | /about]');
       });
 
       it('should stringify custom type with #type', () => {
         const result = stringifyContentValue([
-          { type: 'em', value: 'text', mods: [], props: {} }
+          { type: 'em', value: 'text' }
         ]);
         expect(result).toBe('[text | #em]');
       });
 
       it('should stringify type with mods', () => {
         const result = stringifyContentValue([
-          { type: 'em', value: 'text', mods: ['italic', 'underline'], props: {} }
+          { type: 'em', value: 'text', mods: ['italic', 'underline'] }
         ]);
         expect(result).toBe('[text | #em.italic.underline]');
       });
 
       it('should stringify props as key: value params', () => {
         const result = stringifyContentValue([
-          { type: 'span', value: 'text', mods: [], props: { class: 'foo' } }
+          { type: 'span', value: 'text', props: { class: 'foo' } }
         ]);
         expect(result).toBe('[text | #span | class: foo]');
       });
 
       it('should stringify nested props with dot notation', () => {
         const result = stringifyContentValue([
-          { type: 'span', value: 'text', mods: [], props: { style: { color: 'red' } } }
+          { type: 'span', value: 'text', props: { style: { color: 'red' } } }
         ]);
         expect(result).toBe('[text | #span | style.color: red]');
       });
 
       it('should stringify mixed content', () => {
         const result = stringifyContentValue([
-          { type: 'text', value: 'Hello ', mods: [], props: {} },
-          { type: 'strong', value: 'world', mods: [], props: {} },
-          { type: 'text', value: '!', mods: [], props: {} }
+          { type: 'text', value: 'Hello ' },
+          { type: 'strong', value: 'world' },
+          { type: 'text', value: '!' }
         ]);
         expect(result).toBe('Hello [world]!');
       });
 
       it('should escape brackets in text segments', () => {
         const result = stringifyContentValue([
-          { type: 'text', value: 'a [bracket] b', mods: [], props: {} }
+          { type: 'text', value: 'a [bracket] b' }
         ]);
         expect(result).toBe('a \\[bracket\\] b');
       });

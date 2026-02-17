@@ -13,9 +13,17 @@ export interface ADMLResult {
 
 export interface ContentItem {
   type: string;
-  value: string;
-  mods: string[];
-  props: Record<string, any>;
+  value?: string | any[];
+  mods?: string[];
+  props?: Record<string, any>;
+}
+
+function makeContentItem(type: string, value: string | any[] = '', mods: string[] = [], props: Record<string, any> = {}): ContentItem {
+  const item: ContentItem = { type };
+  if (Array.isArray(value) || value !== '') item.value = value;
+  if (mods.length > 0) item.mods = mods;
+  if (Object.keys(props).length > 0) item.props = props;
+  return item;
 }
 
 /**
@@ -247,20 +255,20 @@ function parseContentArray(lines: string[], startIndex: number, inComment: boole
         delete props.mods;
       }
 
-      arr.push({ type: header.type, value: contentValue, mods, props });
+      arr.push(makeContentItem(header.type, contentValue, mods, props));
       continue;
     }
 
     // Content line with # prefix: #type.mod1.mod2: value
     if (trimmed.startsWith('#')) {
       const header = parseContentHeader(trimmed);
-      arr.push({ type: header.type, value: header.value, mods: header.mods, props: {} });
+      arr.push(makeContentItem(header.type, header.value, header.mods));
       i++;
       continue;
     }
 
     // Plain text line → default type "p"
-    arr.push({ type: 'p', value: trimmed, mods: [], props: {} });
+    arr.push(makeContentItem('p', trimmed));
     i++;
   }
 
@@ -479,8 +487,10 @@ export function parse(input: string, options: ADMLParseOptions = {}): ADMLResult
 }
 
 /**
- * Check if an array is a content array (all items have type, value, mods, props shape)
+ * Check if an array is a content array (all items have type and only content keys)
  */
+const CONTENT_ITEM_KEYS = new Set(['type', 'value', 'mods', 'props']);
+
 function isContentArray(arr: any[]): boolean {
   if (arr.length === 0) return false;
   return arr.every(item =>
@@ -488,9 +498,7 @@ function isContentArray(arr: any[]): boolean {
     item !== null &&
     !Array.isArray(item) &&
     'type' in item &&
-    'value' in item &&
-    'mods' in item &&
-    'props' in item
+    Object.keys(item).every(k => CONTENT_ITEM_KEYS.has(k))
   );
 }
 
@@ -594,13 +602,13 @@ function isLinkLike(value: string): boolean {
 function parseBracketContent(content: string): ContentItem {
   // Special cases
   if (content === '') {
-    return { type: 'html', value: '&nbsp;', mods: [], props: {} };
+    return makeContentItem('html', '&nbsp;');
   }
   if (content === '/') {
-    return { type: 'html', value: '<br>', mods: [], props: {} };
+    return makeContentItem('html', '<br>');
   }
   if (content === '-') {
-    return { type: 'html', value: '&shy;', mods: [], props: {} };
+    return makeContentItem('html', '&shy;');
   }
 
   // Split by pipe
@@ -656,7 +664,7 @@ function parseBracketContent(content: string): ContentItem {
     value = applySubstitutions(value);
   }
 
-  return { type, value, mods, props };
+  return makeContentItem(type, value, mods, props);
 }
 
 /**
@@ -681,7 +689,7 @@ export function parseContentValue(input: string): ContentItem[] {
     if (input[i] === '[') {
       // Flush accumulated plain text
       if (textBuffer) {
-        items.push({ type: 'text', value: applySubstitutions(textBuffer), mods: [], props: {} });
+        items.push(makeContentItem('text', applySubstitutions(textBuffer)));
         textBuffer = '';
       }
 
@@ -717,7 +725,7 @@ export function parseContentValue(input: string): ContentItem[] {
 
   // Flush remaining text
   if (textBuffer) {
-    items.push({ type: 'text', value: applySubstitutions(textBuffer), mods: [], props: {} });
+    items.push(makeContentItem('text', applySubstitutions(textBuffer)));
   }
 
   return items;
@@ -743,9 +751,11 @@ function flattenProps(props: Record<string, any>, prefix: string = ''): Record<s
  * Check if type needs explicit #type param (differs from auto-detected default)
  */
 function needsExplicitType(item: ContentItem): boolean {
-  if (item.mods.length > 0) return true;
+  const mods = item.mods || [];
+  if (mods.length > 0) return true;
 
-  const isHtmlValue = typeof item.value === 'string' && item.value.trimStart().startsWith('<');
+  const value = item.value ?? '';
+  const isHtmlValue = typeof value === 'string' && value.trimStart().startsWith('<');
   const hasLinkHref = item.props && 'href' in item.props && typeof item.props.href === 'string' && isLinkLike(item.props.href);
 
   if (hasLinkHref && item.type === 'a') return false;
@@ -790,13 +800,13 @@ export function stringifyContentValue(content: ContentItem[]): string {
 
   for (const item of content) {
     // Plain text segment
-    if (item.type === 'text' && item.mods.length === 0 && (!item.props || Object.keys(item.props).length === 0)) {
-      result += reverseSubstitutions(item.value);
+    if (item.type === 'text' && (item.mods || []).length === 0 && (!item.props || Object.keys(item.props).length === 0)) {
+      result += reverseSubstitutions((item.value as string) ?? '');
       continue;
     }
 
     // Special HTML cases
-    if (item.type === 'html' && item.mods.length === 0 && (!item.props || Object.keys(item.props).length === 0)) {
+    if (item.type === 'html' && (item.mods || []).length === 0 && (!item.props || Object.keys(item.props).length === 0)) {
       if (item.value === '&nbsp;') { result += '[]'; continue; }
       if (item.value === '<br>') { result += '[/]'; continue; }
       if (item.value === '&shy;') { result += '[-]'; continue; }
@@ -806,24 +816,25 @@ export function stringifyContentValue(content: ContentItem[]): string {
     const params: string[] = [];
 
     // First param: the value
-    params.push(escapeValueForBracket(item.value));
+    params.push(escapeValueForBracket((item.value as string) ?? ''));
 
     // Link shorthand: href as 2nd param
     const useHrefShorthand = canUseHrefShorthand(item);
     if (useHrefShorthand) {
-      params.push(item.props.href);
+      params.push(item.props!.href);
     }
 
     // Type param if needed
     if (needsExplicitType(item)) {
-      const typePart = item.mods.length > 0
-        ? `#${item.type}.${item.mods.join('.')}`
+      const mods = item.mods || [];
+      const typePart = mods.length > 0
+        ? `#${item.type}.${mods.join('.')}`
         : `#${item.type}`;
       params.push(typePart);
     }
 
     // Props (excluding href if used as shorthand)
-    const propsToEmit = { ...item.props };
+    const propsToEmit = { ...(item.props || {}) };
     if (useHrefShorthand) delete propsToEmit.href;
 
     const flat = flattenProps(propsToEmit);
@@ -841,13 +852,15 @@ export function stringifyContentValue(content: ContentItem[]): string {
  * Stringify a content object's type header: #type.mod1.mod2: value
  */
 function stringifyContentHeader(item: any): string {
-  const typeMods = item.mods.length > 0
-    ? `${item.type}.${item.mods.join('.')}`
+  const mods = item.mods || [];
+  const typeMods = mods.length > 0
+    ? `${item.type}.${mods.join('.')}`
     : item.type;
 
-  if (typeof item.value === 'string' && item.value) {
-    return `#${typeMods}: ${item.value}`;
-  } else if (typeof item.value === 'string') {
+  const value = item.value ?? '';
+  if (typeof value === 'string' && value) {
+    return `#${typeMods}: ${value}`;
+  } else if (typeof value === 'string') {
     return `#${typeMods}`;
   } else {
     // Value is a content array or other complex type — handled by caller
@@ -862,30 +875,33 @@ function stringifyContentArray(arr: any[], indent: string): string[] {
   const lines: string[] = [];
 
   for (const item of arr) {
-    const hasProps = typeof item.props === 'object' && Object.keys(item.props).length > 0;
-    const valueIsContentArray = Array.isArray(item.value) && isContentArray(item.value);
+    const props = item.props || {};
+    const mods = item.mods || [];
+    const value = item.value ?? '';
+    const hasProps = typeof props === 'object' && Object.keys(props).length > 0;
+    const valueIsContentArray = Array.isArray(value) && isContentArray(value);
 
     if (hasProps || valueIsContentArray) {
       // Use <...> block syntax
-      const typeMods = item.mods.length > 0
-        ? `${item.type}.${item.mods.join('.')}`
+      const typeMods = mods.length > 0
+        ? `${item.type}.${mods.join('.')}`
         : item.type;
 
       if (valueIsContentArray) {
         lines.push(`${indent}<#${typeMods}: [[`);
-        lines.push(...stringifyContentArray(item.value, indent + '    '));
+        lines.push(...stringifyContentArray(value, indent + '    '));
         lines.push(`${indent}  ]]`);
-      } else if (typeof item.value === 'string' && item.value) {
-        lines.push(`${indent}<#${typeMods}: ${item.value}`);
+      } else if (typeof value === 'string' && value) {
+        lines.push(`${indent}<#${typeMods}: ${value}`);
       } else {
         lines.push(`${indent}<#${typeMods}`);
       }
 
-      lines.push(...stringifyObjectEntries(item.props, indent + '  '));
+      lines.push(...stringifyObjectEntries(props, indent + '  '));
       lines.push(`${indent}>`);
-    } else if (item.type === 'p' && item.mods.length === 0) {
+    } else if (item.type === 'p' && mods.length === 0) {
       // Plain text
-      lines.push(`${indent}${item.value}`);
+      lines.push(`${indent}${value}`);
     } else {
       // Simple #type.mods: value
       lines.push(`${indent}${stringifyContentHeader(item)}`);

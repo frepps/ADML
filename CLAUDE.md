@@ -67,7 +67,7 @@ The parser is a single-pass, line-by-line state machine with these key functions
 11. **`stringifyObjectEntries(data, indent)`** - Recursive object-to-ADML converter (handles nested objects to any depth)
 12. **`stringifyArray(arr: any[], indent: string)`** - Array to ADML format converter with proper indentation
 13. **`stringifyContentArray(arr, indent)`** - Content array to ADML format converter
-14. **`isContentArray(arr)`** - Detects if an array contains content objects (has type/value/mods/props shape)
+14. **`isContentArray(arr)`** - Detects if an array contains content objects (has `type` key and only content-item keys)
 
 ### Parser State Machine
 
@@ -175,7 +175,8 @@ This monorepo uses npm workspaces. Internal dependencies use `"@adml/parser": "*
 ## Type Safety
 
 - All packages use TypeScript with strict mode enabled
-- Parser exports these types: `ADMLResult`, `ADMLParseOptions`
+- Parser exports these types: `ADMLResult`, `ADMLParseOptions`, `ContentItem`
+- `ContentItem` has required `type` and optional `value`, `mods`, `props` — empty keys are omitted
 - Editor generates `.d.ts` files via `npm run build:types`
 
 ## Testing Requirements

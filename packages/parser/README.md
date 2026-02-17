@@ -243,7 +243,7 @@ Produces:
 
 ### Content arrays
 
-Content arrays use double brackets `[[...]]` to define structured content blocks. Each entry becomes an object with `type`, `value`, `mods` (modifiers), and `props` (properties):
+Content arrays use double brackets `[[...]]` to define structured content blocks. Each entry has a required `type`, with optional `value`, `mods` (modifiers), and `props` (properties) — empty keys are omitted:
 
 ```
 body: [[
@@ -257,9 +257,9 @@ Produces:
 ```json
 {
   "body": [
-    { "type": "heading", "value": "Welcome", "mods": [], "props": {} },
-    { "type": "p", "value": "This is a paragraph.", "mods": [], "props": {} },
-    { "type": "image", "value": "banner.jpg", "mods": ["hero"], "props": {} }
+    { "type": "heading", "value": "Welcome" },
+    { "type": "p", "value": "This is a paragraph." },
+    { "type": "image", "value": "banner.jpg", "mods": ["hero"] }
   ]
 }
 ```
@@ -327,16 +327,16 @@ title: Test /* inline comment */ value
 
 ### Inline content
 
-A separate parser for rich inline content within string values. Use `parseContentValue()` on any string to get a content array with the same shape as content arrays (`{ type, value, mods, props }`).
+A separate parser for rich inline content within string values. Use `parseContentValue()` on any string to get a content array with the same shape as content arrays (required `type`, optional `value`, `mods`, `props`).
 
 ```typescript
 import { parseContentValue } from '@adml/parser';
 
 parseContentValue('A [strong part] of string');
 // [
-//   { type: 'text', value: 'A ', mods: [], props: {} },
-//   { type: 'strong', value: 'strong part', mods: [], props: {} },
-//   { type: 'text', value: ' of string', mods: [], props: {} }
+//   { type: 'text', value: 'A ' },
+//   { type: 'strong', value: 'strong part' },
+//   { type: 'text', value: ' of string' }
 // ]
 ```
 
@@ -354,14 +354,14 @@ parseContentValue('A [strong part] of string');
 
 ```typescript
 parseContentValue('[click here|/about]');
-// [{ type: 'a', value: 'click here', mods: [], props: { href: '/about' } }]
+// [{ type: 'a', value: 'click here', props: { href: '/about' } }]
 ```
 
 **HTML detection:** If the value starts with `<`, the default type is `"html"`:
 
 ```typescript
 parseContentValue('[<code>example</code>]');
-// [{ type: 'html', value: '<code>example</code>', mods: [], props: {} }]
+// [{ type: 'html', value: '<code>example</code>' }]
 ```
 
 **Special cases:**
@@ -390,7 +390,7 @@ Converts JSON back to ADML format.
 
 ### `parseContentValue(input: string): ContentItem[]`
 
-Parses a string containing inline content markup into a content array. Each item has `{ type, value, mods, props }`.
+Parses a string containing inline content markup into a content array. Each item has a required `type`, with optional `value`, `mods`, and `props`.
 
 ### `stringifyContentValue(content: ContentItem[]): string`
 

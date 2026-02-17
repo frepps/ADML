@@ -111,7 +111,7 @@ author: World`,
   {
     title: 'Content Arrays',
     description:
-      'Structured content blocks using double brackets. Each entry becomes an object with a type, value, modifiers, and optional props.',
+      'Structured content blocks using double brackets. Each entry has a required type, with optional value, modifiers, and props \u2014 empty keys are omitted.',
     adml: `content: [[
   #heading: Welcome to ADML
   This is a paragraph of text.
