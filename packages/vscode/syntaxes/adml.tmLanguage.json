@@ -1,0 +1,325 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "scopeName": "source.adml",
+  "name": "ADML",
+  "fileTypes": ["adml"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#multiline-string" },
+    { "include": "#key-content-array" },
+    { "include": "#key-array" },
+    { "include": "#key-object" },
+    { "include": "#key-value" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.adml",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.adml",
+          "begin": "/\\*",
+          "end": "\\*/",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.comment.begin.adml" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.comment.end.adml" }
+          }
+        }
+      ]
+    },
+
+    "multiline-string": {
+      "begin": "^(\\s*)([a-zA-Z_][a-zA-Z0-9_.]*)(::)\\s*$",
+      "end": "^\\s*(::)\\s*$",
+      "beginCaptures": {
+        "2": { "name": "entity.name.tag.adml" },
+        "3": { "name": "keyword.operator.multiline.adml" }
+      },
+      "endCaptures": {
+        "1": { "name": "keyword.operator.multiline.adml" }
+      },
+      "contentName": "string.unquoted.multiline.adml"
+    },
+
+    "key-content-array": {
+      "begin": "^(\\s*)([a-zA-Z_][a-zA-Z0-9_.]*)(\\s*:\\s*)(\\[\\[)\\s*$",
+      "end": "^(\\s*)(\\]\\])",
+      "beginCaptures": {
+        "2": { "name": "entity.name.tag.adml" },
+        "3": { "name": "punctuation.separator.key-value.adml" },
+        "4": { "name": "punctuation.definition.content-array.begin.adml" }
+      },
+      "endCaptures": {
+        "2": { "name": "punctuation.definition.content-array.end.adml" }
+      },
+      "patterns": [
+        { "include": "#content-array-body" }
+      ]
+    },
+
+    "content-array-body": {
+      "patterns": [
+        { "include": "#comments" },
+        { "include": "#content-props-block" },
+        { "include": "#content-type-header" },
+        { "include": "#content-plain-text" }
+      ]
+    },
+
+    "content-props-block": {
+      "begin": "^(\\s*)(<)(#[a-zA-Z_][a-zA-Z0-9_]*)((?:\\.[a-zA-Z_][a-zA-Z0-9_]*)*)(?:(:\\s*)(\\[\\[)|(:\\s*)(.+?))?\\s*$",
+      "end": "^(\\s*)(>)",
+      "beginCaptures": {
+        "2": { "name": "punctuation.definition.props.begin.adml" },
+        "3": { "name": "keyword.other.type.adml" },
+        "4": { "name": "entity.other.modifier.adml" },
+        "5": { "name": "punctuation.separator.key-value.adml" },
+        "6": { "name": "punctuation.definition.content-array.begin.adml" },
+        "7": { "name": "punctuation.separator.key-value.adml" },
+        "8": { "name": "string.unquoted.adml" }
+      },
+      "endCaptures": {
+        "2": { "name": "punctuation.definition.props.end.adml" }
+      },
+      "patterns": [
+        { "include": "#comments" },
+        { "include": "#nested-content-array" },
+        { "include": "#props-key-content-array" },
+        { "include": "#props-key-array" },
+        { "include": "#props-key-object" },
+        { "include": "#props-key-value" },
+        { "include": "#content-array-body" }
+      ]
+    },
+
+    "content-type-header": {
+      "match": "^(\\s*)(#[a-zA-Z_][a-zA-Z0-9_]*)((?:\\.[a-zA-Z_][a-zA-Z0-9_]*)*)(?:(:\\s*)(.*))?$",
+      "captures": {
+        "2": { "name": "keyword.other.type.adml" },
+        "3": { "name": "entity.other.modifier.adml" },
+        "4": { "name": "punctuation.separator.key-value.adml" },
+        "5": { "name": "string.unquoted.adml" }
+      }
+    },
+
+    "content-plain-text": {
+      "match": "^\\s*(?!#|<|//|/\\*)(.+)$",
+      "captures": {
+        "1": { "name": "string.unquoted.content.adml" }
+      }
+    },
+
+    "nested-content-array": {
+      "begin": "(\\[\\[)\\s*$",
+      "end": "^(\\s*)(\\]\\])",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.content-array.begin.adml" }
+      },
+      "endCaptures": {
+        "2": { "name": "punctuation.definition.content-array.end.adml" }
+      },
+      "patterns": [
+        { "include": "#content-array-body" }
+      ]
+    },
+
+    "props-key-content-array": {
+      "begin": "^(\\s*)([a-zA-Z_][a-zA-Z0-9_.]*)(\\s*:\\s*)(\\[\\[)\\s*$",
+      "end": "^(\\s*)(\\]\\])",
+      "beginCaptures": {
+        "2": { "name": "entity.name.tag.adml" },
+        "3": { "name": "punctuation.separator.key-value.adml" },
+        "4": { "name": "punctuation.definition.content-array.begin.adml" }
+      },
+      "endCaptures": {
+        "2": { "name": "punctuation.definition.content-array.end.adml" }
+      },
+      "patterns": [
+        { "include": "#content-array-body" }
+      ]
+    },
+
+    "props-key-array": {
+      "begin": "^(\\s*)([a-zA-Z_][a-zA-Z0-9_.]*)(\\s*:\\s*)(\\[)\\s*$",
+      "end": "^(\\s*)(\\])",
+      "beginCaptures": {
+        "2": { "name": "entity.name.tag.adml" },
+        "3": { "name": "punctuation.separator.key-value.adml" },
+        "4": { "name": "punctuation.definition.array.begin.adml" }
+      },
+      "endCaptures": {
+        "2": { "name": "punctuation.definition.array.end.adml" }
+      },
+      "patterns": [
+        { "include": "#comments" },
+        { "include": "#array-body" }
+      ]
+    },
+
+    "props-key-object": {
+      "begin": "^(\\s*)([a-zA-Z_][a-zA-Z0-9_.]*)(\\s*:\\s*)(\\{)\\s*$",
+      "end": "^(\\s*)(\\})",
+      "beginCaptures": {
+        "2": { "name": "entity.name.tag.adml" },
+        "3": { "name": "punctuation.separator.key-value.adml" },
+        "4": { "name": "punctuation.definition.block.begin.adml" }
+      },
+      "endCaptures": {
+        "2": { "name": "punctuation.definition.block.end.adml" }
+      },
+      "patterns": [
+        { "include": "#comments" },
+        { "include": "#object-body" }
+      ]
+    },
+
+    "props-key-value": {
+      "match": "^(\\s*)([a-zA-Z_][a-zA-Z0-9_.]*)(\\s*:\\s*)(.*?)\\s*$",
+      "captures": {
+        "2": { "name": "entity.name.tag.adml" },
+        "3": { "name": "punctuation.separator.key-value.adml" },
+        "4": { "patterns": [{ "include": "#value-types" }] }
+      }
+    },
+
+    "key-array": {
+      "begin": "^(\\s*)([a-zA-Z_][a-zA-Z0-9_.]*)(\\s*:\\s*)(\\[)\\s*$",
+      "end": "^(\\s*)(\\])",
+      "beginCaptures": {
+        "2": { "name": "entity.name.tag.adml" },
+        "3": { "name": "punctuation.separator.key-value.adml" },
+        "4": { "name": "punctuation.definition.array.begin.adml" }
+      },
+      "endCaptures": {
+        "2": { "name": "punctuation.definition.array.end.adml" }
+      },
+      "patterns": [
+        { "include": "#comments" },
+        { "include": "#array-body" }
+      ]
+    },
+
+    "array-body": {
+      "patterns": [
+        {
+          "begin": "^(\\s*)(\\[\\[)\\s*$",
+          "end": "^(\\s*)(\\]\\])",
+          "beginCaptures": {
+            "2": { "name": "punctuation.definition.content-array.begin.adml" }
+          },
+          "endCaptures": {
+            "2": { "name": "punctuation.definition.content-array.end.adml" }
+          },
+          "patterns": [
+            { "include": "#content-array-body" }
+          ]
+        },
+        {
+          "begin": "^(\\s*)(\\[)\\s*$",
+          "end": "^(\\s*)(\\])",
+          "beginCaptures": {
+            "2": { "name": "punctuation.definition.array.begin.adml" }
+          },
+          "endCaptures": {
+            "2": { "name": "punctuation.definition.array.end.adml" }
+          },
+          "patterns": [
+            { "include": "#comments" },
+            { "include": "#array-body" }
+          ]
+        },
+        {
+          "match": "^\\s*(.+?)\\s*$",
+          "captures": {
+            "1": { "patterns": [{ "include": "#value-types" }] }
+          }
+        }
+      ]
+    },
+
+    "key-object": {
+      "begin": "^(\\s*)([a-zA-Z_][a-zA-Z0-9_.]*)(\\s*:\\s*)(\\{)\\s*$",
+      "end": "^(\\s*)(\\})",
+      "beginCaptures": {
+        "2": { "name": "entity.name.tag.adml" },
+        "3": { "name": "punctuation.separator.key-value.adml" },
+        "4": { "name": "punctuation.definition.block.begin.adml" }
+      },
+      "endCaptures": {
+        "2": { "name": "punctuation.definition.block.end.adml" }
+      },
+      "patterns": [
+        { "include": "#comments" },
+        { "include": "#object-body" }
+      ]
+    },
+
+    "object-body": {
+      "patterns": [
+        { "include": "#multiline-string" },
+        { "include": "#key-content-array" },
+        { "include": "#key-array" },
+        { "include": "#key-object" },
+        { "include": "#key-value" }
+      ]
+    },
+
+    "key-value": {
+      "match": "^(\\s*)([a-zA-Z_][a-zA-Z0-9_.]*)(\\s*:\\s*)(.*?)\\s*$",
+      "captures": {
+        "2": { "name": "entity.name.tag.adml" },
+        "3": { "name": "punctuation.separator.key-value.adml" },
+        "4": { "patterns": [{ "include": "#inline-content" }, { "include": "#value-types" }] }
+      }
+    },
+
+    "value-types": {
+      "patterns": [
+        {
+          "match": "^(true|false)$",
+          "name": "constant.language.boolean.adml"
+        },
+        {
+          "match": "^-?\\d+(\\.\\d+)?$",
+          "name": "constant.numeric.adml"
+        },
+        {
+          "match": ".+",
+          "name": "string.unquoted.adml"
+        }
+      ]
+    },
+
+    "inline-content": {
+      "begin": "(?<!\\\\)\\[",
+      "end": "(?<!\\\\)\\]",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.inline-content.begin.adml" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.inline-content.end.adml" }
+      },
+      "patterns": [
+        {
+          "match": "(?<!\\\\)\\|",
+          "name": "punctuation.separator.pipe.adml"
+        },
+        {
+          "match": "#[a-zA-Z_][a-zA-Z0-9_]*(?:\\.[a-zA-Z_][a-zA-Z0-9_]*)*",
+          "name": "keyword.other.type.adml"
+        },
+        {
+          "match": "([a-zA-Z_][a-zA-Z0-9_.]*)(\\s*:)",
+          "captures": {
+            "1": { "name": "entity.name.tag.adml" },
+            "2": { "name": "punctuation.separator.key-value.adml" }
+          }
+        }
+      ]
+    }
+  }
+}
