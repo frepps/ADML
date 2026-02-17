@@ -1475,7 +1475,7 @@ content: [[
     describe('parseContentValue substitutions', () => {
       it('should replace " with left double quote', () => {
         const result = parseContentValue('He said "hello"');
-        expect(result[0].value).toBe('He said \u201Chello\u201C');
+        expect(result[0].value).toBe('He said \u201Dhello\u201D');
       });
 
       it('should replace -- with en dash', () => {
@@ -1496,7 +1496,7 @@ content: [[
 
       it('should apply substitutions to bracket value when not html', () => {
         const result = parseContentValue('[said "hello" | #em]');
-        expect(result[0].value).toBe('said \u201Chello\u201C');
+        expect(result[0].value).toBe('said \u201Dhello\u201D');
       });
     });
 

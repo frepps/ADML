@@ -495,7 +495,7 @@ function isContentArray(arr: any[]): boolean {
 }
 
 /**
- * Apply text substitutions: " -> \u201C, -- -> \u2013
+ * Apply text substitutions: " -> \u201D, -- -> \u2013
  * Skips substitution when escaped with \
  */
 function applySubstitutions(text: string): string {
@@ -517,9 +517,9 @@ function applySubstitutions(text: string): string {
       continue;
     }
 
-    // Smart quote: " -> \u201C (always left/opening)
+    // Smart quote: " -> \u201D (Swedish)
     if (text[i] === '"') {
-      result += '\u201C';
+      result += '\u201D';
       i++;
       continue;
     }
@@ -532,14 +532,14 @@ function applySubstitutions(text: string): string {
 }
 
 /**
- * Reverse text substitutions for stringify: \u201C -> ", \u2013 -> --
+ * Reverse text substitutions for stringify: \u201D -> ", \u2013 -> --
  * Also escapes [ and ] in plain text
  */
 function reverseSubstitutions(text: string): string {
   let result = '';
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
-    if (ch === '\u201C') { result += '"'; continue; }
+    if (ch === '\u201D') { result += '"'; continue; }
     if (ch === '\u2013') { result += '--'; continue; }
     if (ch === '[' || ch === ']') { result += '\\' + ch; continue; }
     result += ch;

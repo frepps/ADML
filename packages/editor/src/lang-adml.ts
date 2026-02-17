@@ -19,6 +19,7 @@ const admlStreamParser = {
     inMultilineValue: false,
     afterColon: false, // Track if we just saw a colon
     inContentArray: 0, // Depth counter for [[ ]] content arrays
+    inInlineBracket: false, // Inside [...] inline content bracket
   }),
   token: (stream: any, state: any) => {
     // Handle multiline comments
@@ -55,6 +56,58 @@ const admlStreamParser = {
       return 'string';
     }
 
+    // Inside inline content bracket [...]
+    if (state.inInlineBracket) {
+      // Escaped characters
+      if (stream.match(/\\[|\]\\]/)) {
+        return 'string';
+      }
+
+      // Closing bracket
+      if (stream.match(']')) {
+        state.inInlineBracket = false;
+        return 'squareBracket';
+      }
+
+      // Pipe separator
+      if (stream.match('|')) {
+        return 'operator';
+      }
+
+      // #type.mod inside bracket
+      if (stream.match(/#[a-zA-Z_]\w*/)) {
+        return 'keyword';
+      }
+
+      // .mod after type
+      if (stream.match(/\.[a-zA-Z_]\w*/)) {
+        return 'propertyName';
+      }
+
+      // Prop key followed by colon (e.g. "href:" or "style.color:")
+      const startPos = stream.pos;
+      if (stream.match(/[a-zA-Z_][\w.]*/)) {
+        if (stream.peek() === ':') {
+          return 'propertyName';
+        }
+        stream.pos = startPos;
+      }
+
+      // Colon inside bracket (prop separator)
+      if (stream.match(':')) {
+        return 'operator';
+      }
+
+      // Skip whitespace
+      if (stream.eatSpace()) {
+        return null;
+      }
+
+      // Everything else inside bracket is string content
+      stream.next();
+      return 'string';
+    }
+
     // Skip whitespace
     if (stream.eatSpace()) {
       return null;
@@ -87,6 +140,16 @@ const admlStreamParser = {
       if (stream.match('>')) {
         state.afterColon = false;
         return 'bracket';
+      }
+    }
+
+    // Inline content brackets in values (after colon)
+    if (state.afterColon && stream.peek() === '[') {
+      // Don't match [[ (that's a content array, handled above)
+      if (!stream.match('[[', false)) {
+        stream.next(); // consume [
+        state.inInlineBracket = true;
+        return 'squareBracket';
       }
     }
 

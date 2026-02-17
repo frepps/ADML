@@ -370,7 +370,7 @@ parseContentValue('[<code>example</code>]');
 - `[-]` → `{ type: 'html', value: '&shy;' }` (soft hyphen)
 
 **Text substitutions** (applied to non-HTML content):
-- `"` → `\u201C` (left double quote)
+- `"` → `\u201D` (swedish double quote)
 - `--` → `\u2013` (en dash)
 - `\"` → literal `"` (escaped, no substitution)
 
