@@ -9,7 +9,7 @@ content: [[
 
   This is a sample article rendered from an ADML file. You can use [inline formatting] and [links | /cms/hello-world] just like this.
 
-  <#citat: To be, or not to be, that is the question.
+  <#citat.shadow-lg.rounded-lg: To be, or not to be, that is the question.
     author: William Shakespeare
     source: Hamlet
   >

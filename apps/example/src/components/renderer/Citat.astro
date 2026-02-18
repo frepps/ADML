@@ -41,3 +41,35 @@ const classes = ['citat', ...mods, propsClass].filter(Boolean).join(' ');
   {author && <footer class="citat-author">&mdash; {String(author)}</footer>}
   {source && <cite class="citat-source">{String(source)}</cite>}
 </blockquote>
+
+<style>
+  blockquote {
+    border-left: 3px solid var(--color-accent);
+    margin: 1.5rem 0;
+    padding: 1rem 1.5rem;
+    background: var(--color-surface);
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
+
+  .citat-content :global(p) {
+    font-size: 1.125rem;
+    font-style: italic;
+    margin: 0;
+  }
+
+  .citat-author {
+    font-weight: 600;
+    margin-top: 0.75rem;
+    font-size: 0.9375rem;
+    color: var(--color-text);
+    font-style: normal;
+  }
+
+  .citat-source {
+    font-style: italic;
+    color: var(--color-muted);
+    font-size: 0.875rem;
+    display: block;
+    margin-top: 0.25rem;
+  }
+</style>
