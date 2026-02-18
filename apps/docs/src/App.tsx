@@ -122,6 +122,29 @@ author: World`,
   >
 ]]`,
   },
+  {
+    title: 'Article Rendering',
+    description:
+      'Content arrays map directly to web pages. Types become HTML tags, mods become CSS classes, props become attributes, and string values are parsed for inline content like [links] and [bold text].',
+    adml: `template: default
+title: My Article
+
+content: [[
+  #h1: Welcome to [ADML]
+
+  A paragraph with a [link | /docs].
+
+  <#blockquote.accent: To be or not to be.
+    author: Shakespeare
+  >
+
+  <#div.border.rounded.p-2: [[
+    #h3: Boxed Section
+    Nested content inside a styled div.
+  ]]
+  >
+]]`,
+  },
 ];
 
 const inlineExamples = [
@@ -138,69 +161,63 @@ ADML - Article Data Markup Language
 Try editing the markup below!
 */
 
+// Article metadata
 title: Welcome to ADML
+template: default
 date: 2026-02-12
 
-// Objects with bracket syntax
 author: {
   name: John Doe
   email: john@example.com
-  role: Writer
 }
 
-// Nested objects
-theme: {
-  colors: {
-    primary: blue
-    secondary: green
-  }
-  font.size: 16
-  font.family: sans-serif
-}
-
-// Arrays
 tags: [
-  javascript
-  typescript
   markup
   json
+  articles
 ]
 
 // Type detection
-port: 3000
-timeout: 30.5
-label: 34px
-enabled: true
-debug: false
-
-// Dot notation
-metadata.version: 1.0
-metadata.year: 2026
-metadata.status: draft
+settings.port: 3000
+settings.debug: false
+settings.label: 34px
 
 // Multiline text
 description::
-ADML supports multiple data types:
-- Strings, numbers, and booleans
-- Multiline strings with ::
-- Objects with { } or dot notation
-- Nested objects to any depth
-- Arrays with [ ]
-- Content arrays with [[ ]]
-- Single-line // and /* multiline */ comments
-
-Perfect for structured article data!
+ADML is a markup language for structured
+article data. It compiles to JSON and can
+render directly to web pages.
 ::
 
-// Content arrays
-body: [[
-  #heading.large: Article Title
-  This is the opening paragraph.
-  <#image.hero: banner.jpg
-    alt: Article banner image
-    width: 1200
+// Content array — renders as a web page
+content: [[
+  #h1: Welcome to [ADML]
+
+  This is the opening paragraph with [inline formatting]
+  and a [link to the docs | /docs].
+
+  <#blockquote.accent: To be or not to be, that is the question.
+    author: William Shakespeare
+    source: Hamlet
   >
-  Another paragraph follows the image.
+
+  #h2.large: Getting Started
+
+  <#ul: [[
+    #li: Write content in ADML
+    #li: Parse to JSON with the [parser | #strong]
+    #li: Render to HTML with templates
+  ]]
+  >
+
+  <#div.border.rounded.p-2.shadow: [[
+    #h3: A Boxed Section
+    Nested content inside a styled div using
+    mods as utility classes.
+  ]]
+  >
+
+  #p.center.muted: Built with ADML
 ]]
 
 category: documentation

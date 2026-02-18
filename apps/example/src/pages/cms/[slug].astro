@@ -1,0 +1,85 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { readArticle } from '../../lib/articles';
+import CmsEditor from '../../components/cms/CmsEditor';
+
+const { slug } = Astro.params;
+const article = await readArticle(slug!);
+
+if (!article) {
+  return Astro.redirect('/cms');
+}
+---
+
+<BaseLayout title={`Edit: ${slug}`}>
+  <div class="cms-editor-layout">
+    <div class="cms-editor-pane">
+      <CmsEditor client:only="react" slug={slug!} initialContent={article.raw} />
+    </div>
+    <div class="cms-preview-pane">
+      <iframe id="preview-frame" src={`/articles/${slug}`}></iframe>
+    </div>
+  </div>
+</BaseLayout>
+
+<style is:global>
+  .cms-editor-layout {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+  .cms-editor-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--color-border);
+    min-width: 0;
+  }
+  .cms-preview-pane {
+    flex: 1;
+    min-width: 0;
+  }
+  .cms-preview-pane iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+  .cms-editor-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .cms-editor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+    flex-shrink: 0;
+  }
+  .cms-editor-back {
+    color: var(--color-accent);
+    text-decoration: none;
+    font-size: 0.8125rem;
+  }
+  .cms-editor-slug {
+    font-weight: 500;
+    font-size: 0.875rem;
+  }
+  .cms-editor-status {
+    color: var(--color-muted);
+    font-size: 0.75rem;
+    margin-left: auto;
+  }
+  .cms-editor-input {
+    flex: 1;
+    overflow: auto;
+  }
+  .cms-editor-input .cm-editor {
+    height: 100%;
+  }
+  .cms-editor-input .cm-scroller {
+    overflow: auto;
+  }
+</style>

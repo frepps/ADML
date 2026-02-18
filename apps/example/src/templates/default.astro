@@ -1,0 +1,28 @@
+---
+import type { ADMLResult } from '@adml/parser';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ContentRenderer from '../components/renderer/ContentRenderer.astro';
+
+interface Props {
+  data: ADMLResult;
+}
+
+const { data } = Astro.props;
+const title = data.title ?? 'Untitled';
+const author = data.author;
+const date = data.date;
+const content = data.content ?? [];
+---
+
+<BaseLayout title={title}>
+  <article class="article">
+    <header class="article-header">
+      <h1>{title}</h1>
+      {author && <p class="author">By {author}</p>}
+      {date && <time>{String(date)}</time>}
+    </header>
+    <div class="article-content">
+      <ContentRenderer items={content} />
+    </div>
+  </article>
+</BaseLayout>

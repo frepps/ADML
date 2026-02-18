@@ -1,0 +1,175 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { listArticles } from '../../lib/articles';
+
+const articles = await listArticles();
+---
+
+<BaseLayout title="CMS - ADML">
+  <div class="cms-container">
+    <header class="cms-header">
+      <h1>ADML CMS</h1>
+      <a href="/" class="cms-link">View site</a>
+    </header>
+
+    <section class="cms-section">
+      <h2>Articles</h2>
+      {articles.length > 0 ? (
+        <ul class="cms-list">
+          {articles.map((a) => (
+            <li class="cms-list-item">
+              <a href={`/cms/${a.slug}`} class="cms-list-link">
+                <span class="cms-list-title">{a.title}</span>
+                <span class="cms-list-slug">{a.slug}</span>
+              </a>
+              <a href={`/articles/${a.slug}`} target="_blank" class="cms-view-link">
+                View
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="cms-empty">No articles yet.</p>
+      )}
+    </section>
+
+    <section class="cms-section">
+      <h2>Create New Article</h2>
+      <form id="create-form" class="cms-form">
+        <input
+          name="slug"
+          placeholder="article-slug"
+          required
+          pattern="[a-z0-9-]+"
+          title="Lowercase letters, numbers, and hyphens only"
+          class="cms-input"
+        />
+        <button type="submit" class="cms-button">Create</button>
+      </form>
+    </section>
+  </div>
+</BaseLayout>
+
+<script>
+  document.getElementById('create-form')!.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const slug = (form.elements.namedItem('slug') as HTMLInputElement).value;
+    const res = await fetch('/api/articles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        slug,
+        content: `title: ${slug}\n\ncontent: [[\n  #h1: ${slug}\n  Start writing here.\n]]`,
+      }),
+    });
+    if (res.ok) {
+      window.location.href = `/cms/${slug}`;
+    } else {
+      const data = await res.json();
+      alert(data.error || 'Failed to create article');
+    }
+  });
+</script>
+
+<style>
+  .cms-container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+  .cms-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .cms-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+  .cms-link {
+    color: var(--color-accent);
+    text-decoration: none;
+    font-size: 0.875rem;
+  }
+  .cms-section {
+    margin-bottom: 2rem;
+  }
+  .cms-section h2 {
+    font-size: 1.125rem;
+    margin: 0 0 1rem;
+  }
+  .cms-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .cms-list-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .cms-list-link {
+    flex: 1;
+    text-decoration: none;
+    color: inherit;
+  }
+  .cms-list-link:hover .cms-list-title {
+    color: var(--color-accent);
+  }
+  .cms-list-title {
+    display: block;
+    font-weight: 500;
+  }
+  .cms-list-slug {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-muted);
+  }
+  .cms-view-link {
+    color: var(--color-muted);
+    text-decoration: none;
+    font-size: 0.8125rem;
+    margin-left: 1rem;
+  }
+  .cms-view-link:hover {
+    color: var(--color-accent);
+  }
+  .cms-empty {
+    color: var(--color-muted);
+  }
+  .cms-form {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .cms-input {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    font-family: inherit;
+  }
+  .cms-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  }
+  .cms-button {
+    padding: 0.5rem 1rem;
+    background: var(--color-accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 0.875rem;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .cms-button:hover {
+    background: var(--color-accent-hover);
+  }
+</style>

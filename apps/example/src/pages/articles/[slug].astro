@@ -1,0 +1,22 @@
+---
+import { readArticle } from '../../lib/articles';
+import DefaultTemplate from '../../templates/default.astro';
+import BlankTemplate from '../../templates/blank.astro';
+
+const templates: Record<string, any> = {
+  default: DefaultTemplate,
+  blank: BlankTemplate,
+};
+
+const { slug } = Astro.params;
+const article = await readArticle(slug!);
+
+if (!article) {
+  return new Response('Article not found', { status: 404 });
+}
+
+const templateName = (article.data.template as string) ?? 'default';
+const Template = templates[templateName] ?? templates.default;
+---
+
+<Template data={article.data} />

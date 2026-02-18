@@ -15,7 +15,7 @@ ADML is designed for structured article data, making it easy to write and parse 
 - ✅ **Content arrays**: Structured content blocks with `[[ ]]` syntax
 - ✅ **Comments**: Line comments with `//`
 - ✅ **Roundtrip support**: Parse ADML → JSON → ADML preserves data
-- ✅ **84 comprehensive tests**: Ensuring reliability
+- ✅ **133 comprehensive tests**: Ensuring reliability
 
 ## Monorepo Structure
 
@@ -23,10 +23,12 @@ ADML is designed for structured article data, making it easy to write and parse 
 ADML/
 ├── packages/
 │   ├── parser/          # @adml/parser - Core ADML parser
-│   └── editor/          # @adml/editor - Web-based editor component
+│   ├── editor/          # @adml/editor - Web-based editor component
+│   └── vscode/          # @adml/vscode - VS Code extension
 ├── apps/
-│   └── docs/           # Documentation site with interactive playground
-└── package.json        # Workspace configuration
+│   ├── docs/            # Documentation site with interactive playground
+│   └── example/         # CMS + Article renderer (Astro)
+└── package.json         # Workspace configuration
 ```
 
 ## Packages
@@ -65,6 +67,25 @@ const editor = new ADMLEditor(document.getElementById('editor'), {
   onChange: (value) => console.log(value)
 });
 ```
+
+### [Example App](apps/example/)
+CMS and article renderer demonstrating ADML in a real use case. Built with Astro.
+
+- **Article renderer**: Parses ADML files and renders web pages using a template and component system
+- **CMS**: File-based editor with live preview using the `@adml/editor` component
+
+```bash
+cd apps/example
+npm run dev
+# Open http://localhost:4000
+```
+
+The renderer uses a dual-layer system:
+
+1. **Templates** define page-level layouts. An ADML file selects its template with `template: default`.
+2. **Components** are matched by content item `type`. If no component matches, the type is used as an HTML tag. Mods become CSS classes, props become HTML attributes, and string values are parsed for inline content.
+
+To add a custom component, create an `.astro` file in `src/components/renderer/` and register it in `registry.ts`.
 
 ## Development
 

@@ -1,0 +1,38 @@
+title: Hello World
+template: default
+author: ADML Team
+date: 2026-02-18
+
+content: [[
+  #h1: Welcome to ADML
+  #h1.large.right: Welcome to ADML
+
+  This is a sample article rendered from an ADML file. You can use [inline formatting] and [links | /cms/hello-world] just like this.
+
+  <#citat: To be, or not to be, that is the question.
+    author: William Shakespeare
+    source: Hamlet
+  >
+
+  #h2.large: Getting Started
+
+  Edit this file using the CMS to see live changes. Here are some things you can do:
+
+  <#ul: [[
+    #li: Write content in ADML markup
+    #li: Use [mods | #strong] for styling
+    #li: Create custom components
+    #li: Nest content arrays inside blocks
+  ]]
+  >
+
+  <#div.border.rounded.p-2.shadow-lg: [[
+    #h3: A boxed section
+    This content is inside a [styled|#em|style.color:red] div with utility classes applied through mods.
+  ]]
+  >
+
+  #hr
+
+  #p.center.small: Built with ADML
+]]

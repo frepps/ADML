@@ -1,0 +1,71 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { listArticles } from '../lib/articles';
+
+const articles = await listArticles();
+---
+
+<BaseLayout title="ADML Articles">
+  <div class="page-container">
+    <header class="page-header">
+      <h1>Articles</h1>
+      <p>Content rendered from ADML files.</p>
+    </header>
+    <nav>
+      {articles.length > 0 ? (
+        <ul class="article-list">
+          {articles.map((a) => (
+            <li>
+              <a href={`/articles/${a.slug}`}>{a.title}</a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>No articles yet. <a href="/cms">Create one in the CMS</a>.</p>
+      )}
+    </nav>
+    <footer class="page-footer">
+      <a href="/cms">Open CMS</a>
+    </footer>
+  </div>
+</BaseLayout>
+
+<style>
+  .page-container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+  .page-header h1 {
+    margin: 0 0 0.25rem;
+  }
+  .page-header p {
+    color: var(--color-muted);
+    margin: 0 0 2rem;
+  }
+  .article-list {
+    list-style: none;
+    padding: 0;
+  }
+  .article-list li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .article-list a {
+    color: var(--color-accent);
+    text-decoration: none;
+    font-size: 1.125rem;
+  }
+  .article-list a:hover {
+    text-decoration: underline;
+  }
+  .page-footer {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+  }
+  .page-footer a {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+</style>

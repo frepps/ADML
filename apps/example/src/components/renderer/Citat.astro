@@ -1,0 +1,43 @@
+---
+/**
+ * Citat component — renders a styled blockquote.
+ *
+ * ADML usage:
+ *   <#citat: Quote text here.
+ *     author: Author Name
+ *     source: Source Title
+ *   >
+ *
+ * Or with nested content:
+ *   <#citat: [[
+ *       First paragraph of the quote.
+ *       Second paragraph.
+ *     ]]
+ *     author: Author Name
+ *   >
+ *
+ * Props:
+ *   - author: Attribution name (rendered in <footer>)
+ *   - source: Source title (rendered in <cite>)
+ *   - Any other props become HTML attributes on the <blockquote>
+ *
+ * Mods are added as CSS classes alongside "citat".
+ */
+interface Props {
+  value?: string | any[];
+  mods?: string[];
+  props?: Record<string, any>;
+}
+
+const { mods = [], props: itemProps = {} } = Astro.props;
+const { author, source, class: propsClass, ...restProps } = itemProps;
+const classes = ['citat', ...mods, propsClass].filter(Boolean).join(' ');
+---
+
+<blockquote class={classes} {...restProps}>
+  <div class="citat-content">
+    <slot />
+  </div>
+  {author && <footer class="citat-author">&mdash; {String(author)}</footer>}
+  {source && <cite class="citat-source">{String(source)}</cite>}
+</blockquote>

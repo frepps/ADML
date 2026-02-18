@@ -4,11 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ADML (Article Data Markup Language) is a markup language inspired by ArchieML that compiles to JSON. This is a monorepo with three main packages:
+ADML (Article Data Markup Language) is a markup language inspired by ArchieML that compiles to JSON. This is a monorepo:
 
 - `@adml/parser` - Core ADML to JSON parser (packages/parser/)
 - `@adml/editor` - CodeMirror-based editor component (packages/editor/)
+- `@adml/vscode` - VS Code extension (packages/vscode/)
 - `docs` - Interactive playground and documentation (apps/docs/)
+- `example` - CMS + Article renderer built with Astro (apps/example/)
 
 ## Build & Test Commands
 
@@ -44,6 +46,14 @@ npm run dev          # Watch mode
 ```bash
 cd apps/docs
 npm run dev          # Start dev server at http://localhost:3000
+npm run build        # Build for production
+npm run preview      # Preview production build
+```
+
+### Example App (apps/example/)
+```bash
+cd apps/example
+npm run dev          # Start dev server at http://localhost:4000
 npm run build        # Build for production
 npm run preview      # Preview production build
 ```
@@ -162,11 +172,15 @@ Always add roundtrip tests for new features to ensure data preservation.
 ## Key Files
 
 - `packages/parser/src/index.ts` - All parser logic
-- `packages/parser/src/index.test.ts` - 84 tests
+- `packages/parser/src/index.test.ts` - 133 tests
 - `packages/editor/src/index.ts` - Vanilla JS CodeMirror wrapper
 - `packages/editor/src/auto-close.ts` - Auto-closing brackets and smart indentation
 - `packages/editor/src/react.tsx` - React component wrapper
 - `apps/docs/src/App.tsx` - Documentation site with step-by-step examples and full playground
+- `apps/example/src/lib/render.ts` - Render utilities (buildAttrs, isVoidElement)
+- `apps/example/src/components/renderer/ContentRenderer.astro` - Recursive content renderer
+- `apps/example/src/components/renderer/registry.ts` - Component type → Astro component map
+- `apps/example/src/components/cms/CmsEditor.tsx` - React editor island for CMS
 
 ## npm Workspaces
 
@@ -187,4 +201,36 @@ When adding features:
 - Roundtrip test - parse → stringify → parse preserves data
 - Edge cases - empty values, special characters, whitespace
 
-All 84 tests must pass before committing changes.
+All 133 tests must pass before committing changes.
+
+## Example App Architecture (apps/example/)
+
+The example app is an Astro SSR application combining a CMS and article renderer.
+
+### Article Renderer
+
+Content arrays are rendered using a recursive `ContentRenderer.astro` component:
+- Checks `registry.ts` for a matching Astro component by `type`
+- Falls back to using `type` as an HTML tag name (e.g., `h1`, `div`, `ul`)
+- `mods` → CSS class names, `props` → HTML attributes
+- String values are parsed with `parseContentValue()` for inline content
+- Uses `Astro.self` for recursion (nested content arrays, inline content)
+
+### Component Registry
+
+`src/components/renderer/registry.ts` maps content item types to Astro components. Built-in components: `text`, `html`, `citat`. To add a custom component: create `.astro` file in `renderer/`, import and register in `registry.ts`.
+
+### Templates
+
+Astro components in `src/templates/`. Selected by `template:` key in ADML (default: `default`). Template map is a static import object in `src/pages/articles/[slug].astro`.
+
+### CMS
+
+- API routes at `src/pages/api/articles/` for CRUD on `.adml` files in `content/articles/`
+- React island (`CmsEditor.tsx`) using `ADMLEditorReact` with `client:only="react"`
+- Split-pane layout: editor + iframe preview, auto-save with debounce
+
+### Styles
+
+- `src/styles/base.css` — classless defaults scoped to `.article-content`, uses `--base-font-size` and `--text-scale` custom properties
+- `src/styles/utilities.css` — utility classes scoped under `.article-content`, text size mods set `--text-scale` to scale relative to element defaults

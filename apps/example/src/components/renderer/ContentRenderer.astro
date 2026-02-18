@@ -1,0 +1,53 @@
+---
+import { parseContentValue, type ContentItem } from '@adml/parser';
+import { buildAttrs, isVoidElement } from '../../lib/render';
+import { components } from './registry';
+
+interface Props {
+  items: ContentItem[];
+}
+
+const { items } = Astro.props;
+---
+
+{items.map((item) => {
+  const Component = components[item.type];
+  const attrs = buildAttrs(item);
+  const hasArrayValue = Array.isArray(item.value);
+  const hasStringValue = typeof item.value === 'string' && item.value !== '';
+  const inlineItems = hasStringValue ? parseContentValue(item.value as string) : [];
+
+  if (Component) {
+    // Registered component — pass value, mods, props + render children via slot
+    return hasArrayValue ? (
+      <Component value={item.value} mods={item.mods} props={item.props}>
+        <Astro.self items={item.value as ContentItem[]} />
+      </Component>
+    ) : hasStringValue ? (
+      <Component value={item.value} mods={item.mods} props={item.props}>
+        <Astro.self items={inlineItems} />
+      </Component>
+    ) : (
+      <Component value={item.value} mods={item.mods} props={item.props} />
+    );
+  }
+
+  // Fallback: use type as HTML tag
+  const Tag = item.type;
+
+  if (isVoidElement(item.type)) {
+    return <Tag {...attrs} />;
+  }
+
+  return hasArrayValue ? (
+    <Tag {...attrs}>
+      <Astro.self items={item.value as ContentItem[]} />
+    </Tag>
+  ) : hasStringValue ? (
+    <Tag {...attrs}>
+      <Astro.self items={inlineItems} />
+    </Tag>
+  ) : (
+    <Tag {...attrs} />
+  );
+})}

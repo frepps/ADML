@@ -1,0 +1,15 @@
+---
+/**
+ * Html component — renders raw HTML content.
+ * Used for inline HTML like <br>, &nbsp;, or embedded markup.
+ */
+interface Props {
+  value?: string;
+  mods?: string[];
+  props?: Record<string, any>;
+}
+
+const { value = '' } = Astro.props;
+---
+
+<Fragment set:html={value} />

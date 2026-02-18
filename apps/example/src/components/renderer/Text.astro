@@ -1,0 +1,15 @@
+---
+/**
+ * Text component — renders escaped text content.
+ * Used by the inline content parser for plain text segments.
+ */
+interface Props {
+  value?: string;
+  mods?: string[];
+  props?: Record<string, any>;
+}
+
+const { value = '' } = Astro.props;
+---
+
+{value}
