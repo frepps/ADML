@@ -122,29 +122,7 @@ author: World`,
   >
 ]]`,
   },
-  {
-    title: 'Article Rendering',
-    description:
-      'Content arrays map directly to web pages. Types become HTML tags, mods become CSS classes, props become attributes, and string values are parsed for inline content like [links] and [bold text].',
-    adml: `template: default
-title: My Article
 
-content: [[
-  #h1: Welcome to [ADML]
-
-  A paragraph with a [link | /docs].
-
-  <#blockquote.accent: To be or not to be.
-    author: Shakespeare
-  >
-
-  <#div.border.rounded.p-2: [[
-    #h3: Boxed Section
-    Nested content inside a styled div.
-  ]]
-  >
-]]`,
-  },
 ];
 
 const inlineExamples = [
@@ -189,7 +167,7 @@ article data. It compiles to JSON and can
 render directly to web pages.
 ::
 
-// Content array — renders as a web page
+// Content array — use to render components and html (see example app in repo)
 content: [[
   #h1: Welcome to [ADML]
 

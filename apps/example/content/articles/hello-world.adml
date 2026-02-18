@@ -4,17 +4,17 @@ author: ADML Team
 date: 2026-02-18
 
 content: [[
-  #h1: Welcome to ADML
-  #h1.large.right: Welcome to ADML
+  #h1.xlarge: Welcome to ADML
 
-  This is a sample article rendered from an ADML file. You can use [inline formatting] and [links | /cms/hello-world] just like this.
+  This is a sample article rendered from an ADML file. You can use [inline formatting] and [links | /cms/hello-world | target:_blank] just like this.
 
-  <#citat.shadow-lg.rounded-lg: To be, or not to be, that is the question.
+  <#citat.shadow-lg.rounded-lg
+    value: To be, or not to be, that is the question
     author: William Shakespeare
     source: Hamlet
   >
 
-  #h2.large: Getting Started
+  #h2: Getting Started
 
   Edit this file using the CMS to see live changes. Here are some things you can do:
 
@@ -26,7 +26,7 @@ content: [[
   ]]
   >
 
-  <#div.border.rounded.p-2.shadow-lg: [[
+  <#div.border.rounded.px-2.shadow: [[
     #h3: A boxed section
     This content is inside a [styled|#em|style.color:red] div with utility classes applied through mods.
   ]]
