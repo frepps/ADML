@@ -40,20 +40,37 @@ ADML/
 │   ├── parser/          # Core ADML parser
 │   │   ├── src/
 │   │   │   ├── index.ts      # Parser implementation
-│   │   │   └── index.test.ts # Tests
+│   │   │   └── index.test.ts # Tests (133 tests)
 │   │   └── package.json
 │   │
-│   └── editor/          # Web editor component
-│       ├── src/
-│       │   ├── index.ts  # Vanilla JS editor
-│       │   └── react.tsx # React wrapper
+│   ├── editor/          # Web editor component
+│   │   ├── src/
+│   │   │   ├── index.ts      # Vanilla JS editor
+│   │   │   ├── react.tsx     # React wrapper
+│   │   │   ├── lang-adml.ts  # ADML syntax highlighting
+│   │   │   └── auto-close.ts # Smart bracket handling
+│   │   └── package.json
+│   │
+│   └── vscode/          # VS Code extension
+│       ├── syntaxes/         # TextMate grammar
+│       ├── snippets/         # Code snippets
 │       └── package.json
 │
 └── apps/
-    └── docs/           # Documentation & playground
+    ├── docs/           # Documentation & playground
+    │   ├── src/
+    │   │   ├── App.tsx # Playground app
+    │   │   └── main.tsx
+    │   └── package.json
+    │
+    └── example/        # CMS + Article renderer (Astro)
         ├── src/
-        │   ├── App.tsx # Playground app
-        │   └── main.tsx
+        │   ├── components/
+        │   │   ├── renderer/  # Content renderer & registry
+        │   │   └── cms/       # CMS editor (React island)
+        │   ├── templates/     # Page layouts
+        │   ├── pages/         # Routes & API
+        │   └── styles/        # CSS
         └── package.json
 ```
 
@@ -64,7 +81,8 @@ ADML/
 ```bash
 cd packages/parser
 npm run dev      # Watch mode
-npm run test     # Run tests
+npm test         # Run tests
+npm test -- --watch  # Tests in watch mode
 ```
 
 ### Working on the Editor
@@ -74,10 +92,25 @@ cd packages/editor
 npm run dev      # Watch mode
 ```
 
+### Working on the VS Code Extension
+
+```bash
+cd packages/vscode
+npm run build    # Build extension
+npm run package  # Package as .vsix
+```
+
 ### Working on the Docs
 
 ```bash
 cd apps/docs
+npm run dev      # Start dev server
+```
+
+### Working on the Example App
+
+```bash
+cd apps/example
 npm run dev      # Start dev server
 ```
 
@@ -107,6 +140,8 @@ cd packages/parser
 npm run build
 ```
 
+**Note:** The editor build runs `build:lib` (Vite) before `build:types` (tsc) because Vite cleans the `dist/` directory.
+
 ## Submitting Changes
 
 1. Create a new branch for your feature/fix
@@ -122,7 +157,6 @@ npm run build
 - Use TypeScript for all new code
 - Follow existing code style and conventions
 - Write clear, descriptive commit messages
-- Add JSDoc comments for public APIs
 
 ## Questions?
 

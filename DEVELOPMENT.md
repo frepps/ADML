@@ -25,9 +25,9 @@ npm run dev
 
 ```bash
 npm install          # Install all dependencies
-npm run build        # Build all packages
+npm run build        # Build all packages (topological order)
 npm test             # Run all tests
-npm run lint         # Lint all packages (if configured)
+npm run dev          # Start dev mode for all packages
 ```
 
 ### Parser Package
@@ -46,10 +46,21 @@ npm test -- --watch  # Watch mode for tests
 ```bash
 cd packages/editor
 
-npm run build        # Build types and library
-npm run build:types  # Generate .d.ts files
-npm run build:lib    # Build with Vite
+npm run build        # Build with Vite, then generate .d.ts files
+npm run build:lib    # Build with Vite only
+npm run build:types  # Generate .d.ts files only
 npm run dev          # Watch mode
+```
+
+**Note:** Build order matters — `build:lib` (Vite) runs before `build:types` (tsc) because Vite cleans the `dist/` directory.
+
+### VS Code Extension
+
+```bash
+cd packages/vscode
+
+npm run build        # Compile TypeScript
+npm run package      # Package as .vsix file
 ```
 
 ### Docs/Playground
@@ -62,9 +73,19 @@ npm run build        # Build for production
 npm run preview      # Preview production build
 ```
 
+### Example App
+
+```bash
+cd apps/example
+
+npm run dev          # Start dev server (http://localhost:4000)
+npm run build        # Build for production
+npm run preview      # Preview production build
+```
+
 ## Development Workflow
 
-### Adding a New Feature
+### Adding a New Parser Feature
 
 1. **Write tests first** (TDD approach)
    ```bash
@@ -81,8 +102,8 @@ npm run preview      # Preview production build
 
 3. **Update documentation**
    ```bash
-   # Edit README.md
-   # Update examples in apps/docs/src/App.tsx
+   # Edit packages/parser/README.md
+   # Add example in apps/docs/src/App.tsx (examples array + fullExample)
    ```
 
 4. **Test in playground**
@@ -97,20 +118,23 @@ npm run preview      # Preview production build
 2. Add tests in `packages/parser/src/index.test.ts`
 3. Run tests: `npm test`
 4. Build: `npm run build`
-5. Rebuild editor (depends on parser): `cd ../editor && npm run build`
-6. Test in playground: `cd ../../apps/docs && npm run dev`
+5. Rebuild editor (depends on parser): `cd packages/editor && npm run build`
+6. Test in playground: `cd apps/docs && npm run dev`
 
 ### Making Changes to Editor
 
-1. Edit `packages/editor/src/index.ts` or `react.tsx`
+1. Edit files in `packages/editor/src/`
+   - `index.ts` — Vanilla JS editor class
+   - `react.tsx` — React wrapper
+   - `lang-adml.ts` — Syntax highlighting
+   - `auto-close.ts` — Smart bracket handling
 2. Rebuild: `npm run build`
-3. Test in playground: `cd ../../apps/docs && npm run dev`
+3. Test in playground: `cd apps/docs && npm run dev`
 
 ## Code Style
 
 - Use TypeScript for all code
 - Follow existing patterns and conventions
-- Add JSDoc comments for public APIs
 - Keep functions small and focused
 - Use descriptive variable names
 
@@ -122,13 +146,8 @@ npm run preview      # Preview production build
 describe('Feature Name', () => {
   describe('parse', () => {
     it('should parse basic case', () => {
-      // Arrange
       const input = `...`.trim();
-
-      // Act
       const result = parse(input);
-
-      // Assert
       expect(result).toEqual(...);
     });
   });
@@ -150,49 +169,30 @@ Aim for:
 - All stringify features
 - Roundtrip tests (parse → stringify → parse)
 - Edge cases (empty values, special characters)
-- Error cases (if error handling is added)
-
-## Debugging
-
-### Parser Issues
-
-Add console.logs in `packages/parser/src/index.ts`:
-
-```typescript
-export function parse(input: string, options: ADMLParseOptions = {}): ADMLResult {
-  const lines = input.split('\n');
-  console.log('Parsing lines:', lines); // Debug output
-
-  // ... rest of function
-}
-```
-
-### Playground Issues
-
-Open browser DevTools (F12) and check:
-1. Console for errors
-2. Network tab for failed requests
-3. React DevTools for component state
-
-### Build Issues
-
-Common issues:
-- **TypeScript errors**: Check `tsconfig.json` settings
-- **Missing types**: Run `npm run build:types` in editor package
-- **Import errors**: Ensure all packages are built
 
 ## File Structure
 
 ```
 packages/parser/
 ├── src/
-│   ├── index.ts           # Main parser logic
+│   ├── index.ts           # Main parser logic (~990 lines)
 │   │   ├── parseValue()        # Type detection
 │   │   ├── parseArray()        # Array parsing
+│   │   ├── parseContentHeader()# Content entry parsing
+│   │   ├── parseContentArray() # Content array parsing
+│   │   ├── parseObjectLike()   # Generic object block parser
+│   │   ├── parseObject()       # Object wrapper (} closer)
+│   │   ├── parseProps()        # Props wrapper (> closer)
+│   │   ├── setByPath()         # Dot notation path setter
 │   │   ├── parse()             # Main parser
+│   │   ├── parseContentValue() # Inline content parser
+│   │   ├── stringifyContentValue()# Inline content stringifier
+│   │   ├── stringifyObjectEntries()# Recursive object stringifier
 │   │   ├── stringifyArray()    # Array stringification
+│   │   ├── stringifyContentArray()# Content array stringification
+│   │   ├── isContentArray()    # Content array detection
 │   │   └── stringify()         # Main stringifier
-│   └── index.test.ts      # All tests
+│   └── index.test.ts      # All tests (133 tests, ~1650 lines)
 ├── dist/                  # Built files (generated)
 ├── package.json
 ├── tsconfig.json
@@ -207,36 +207,26 @@ packages/parser/
 
 ### Editor
 - Runtime: CodeMirror 6 packages
-- Peer: React, React-DOM (optional)
+- Peer: React, React-DOM (optional, for React wrapper)
 - Dev: TypeScript, Vite
+
+### VS Code Extension
+- Dev: TypeScript, @vscode/vsce
 
 ### Docs
 - Runtime: React, Parser, Editor
 - Dev: Vite, TypeScript
+
+### Example App
+- Runtime: Astro, @astrojs/node, @astrojs/react, @adml/parser, @adml/editor
+- Dev: TypeScript
 
 ## Common Tasks
 
 ### Update Parser Examples
 
 1. Edit `packages/parser/README.md`
-2. Edit `apps/docs/src/App.tsx` - update `initialValue`
-
-### Add New Test
-
-```typescript
-// In packages/parser/src/index.test.ts
-it('should handle [new feature]', () => {
-  const input = `
-    key: value
-  `.trim();
-
-  const result = parse(input);
-
-  expect(result).toEqual({
-    key: 'value'
-  });
-});
-```
+2. Edit `apps/docs/src/App.tsx` — update `examples` array and `fullExample` string
 
 ### Fix Type Errors
 
@@ -274,13 +264,6 @@ npm run build
 2. Rebuild packages: `npm run build`
 3. Restart dev server
 
-### Type Errors in Playground
-
-The docs app needs editor types:
-```bash
-cd packages/editor && npm run build:types
-```
-
 ### Import Errors
 
 Workspace dependencies use `"@adml/parser": "*"` syntax.
@@ -304,17 +287,9 @@ npm run build  # Ensure everything builds
 npm test       # Ensure all tests pass
 ```
 
-## Performance Tips
-
-- Parser is already O(n)
-- For large files, consider streaming parser (future)
-- Stringify can be optimized with string builders
-- CodeMirror handles large documents well
-
 ## Next Steps
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for:
 - Detailed architecture explanation
 - How to add new features
 - Extension points
-- Future enhancement ideas

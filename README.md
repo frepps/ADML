@@ -68,6 +68,9 @@ const editor = new ADMLEditor(document.getElementById('editor'), {
 });
 ```
 
+### [@adml/vscode](packages/vscode/)
+VS Code extension with syntax highlighting, bracket matching, and snippets for `.adml` files.
+
 ### [Example App](apps/example/)
 CMS and article renderer demonstrating ADML in a real use case. Built with Astro.
 
@@ -137,8 +140,10 @@ npm run dev
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Detailed architecture and how to extend ADML
 - **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development guide and common tasks
+- **[ALTERNATIVES.md](ALTERNATIVES.md)** - Comparison with other tools
 - **[Parser README](packages/parser/README.md)** - Full syntax reference
 - **[Editor README](packages/editor/README.md)** - Editor API documentation
+- **[VS Code Extension](packages/vscode/README.md)** - VS Code extension
 
 ## Contributing
 

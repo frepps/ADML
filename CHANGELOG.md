@@ -17,11 +17,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Objects** with two syntaxes:
   - Bracket syntax: `key: { prop: value }`
   - Dot notation: `key.prop: value`
+  - Nested objects to any depth (brackets, dot notation, or mixed)
+  - Dot notation merges into existing objects
 - **Arrays** with `[ ]` syntax
   - Simple arrays: `[item1 item2]`
   - Nested arrays: `[[item1] [item2]]`
   - Mixed content arrays
-- **Comments** using `//` line syntax
+- **Content arrays** with `[[ ]]` syntax
+  - Typed entries: `#type.mod1.mod2: value`
+  - Plain text defaults to `p` type
+  - Entry props with `< ... >` blocks
+  - Nested content arrays inside props
+  - `ContentItem` type: required `type`, optional `value`, `mods`, `props` (empty keys omitted)
+- **Inline content** parser for rich text within string values
+  - `parseContentValue()` / `stringifyContentValue()`
+  - Bracket syntax: `[value | #type.mod | prop: value]`
+  - Auto-detected links: `[text|/url]` → `{ type: 'a', props: { href: '/url' } }`
+  - Special cases: `[]` (nbsp), `[/]` (br), `[-]` (shy)
+  - Text substitutions: `"` → smart quote, `--` → en dash
+  - Escape sequences: `\[`, `\]`, `\|`
+- **Comments**:
+  - Line comments: `//`
+  - Block comments: `/* ... */`
+  - Inline block comments
 - **Bidirectional conversion**:
   - `parse()` - ADML to JSON
   - `stringify()` - JSON to ADML
@@ -31,19 +49,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Vanilla JavaScript editor** using CodeMirror 6
 - **React wrapper component** (`ADMLEditorReact`)
 - **Real-time onChange callbacks**
-- **Syntax highlighting** (via CodeMirror markdown mode)
+- **ADML syntax highlighting** via custom Lezer grammar (`lang-adml.ts`)
+- **Auto-closing brackets** with smart indentation (`auto-close.ts`)
+- **Autocomplete** - context-aware suggestions for structure and values
 - **Line wrapping** and standard editor features
+
+#### VS Code Extension
+- **Syntax highlighting** for `.adml` files via TextMate grammar
+- **Comment toggling** with `Cmd/Ctrl+/`
+- **Bracket matching** and auto-closing for `{}`, `[]`, `[[]]`, `<>`
+- **Auto-indentation**
+- **Code snippets**
 
 #### Documentation & Playground
 - **Interactive playground** with live ADML editor and JSON output
-- **Split-view interface** showing ADML input and JSON output side-by-side
-- **Example content** demonstrating all features
+- **Step-by-step examples** for each feature
+- **Full example** showing all features combined
 - **Responsive design** for desktop and mobile
+
+#### Example App
+- **Astro SSR** application combining CMS and article renderer
+- **Recursive content renderer** with component registry
+- **Template system** for page-level layouts
+- **File-based CMS** with API routes, editor, and live preview
 
 #### Development Infrastructure
 - **Monorepo structure** using npm workspaces
 - **TypeScript** throughout the project
-- **41 comprehensive tests** using Vitest
+- **133 comprehensive tests** using Vitest
 - **Vite** for fast builds and development
 - **Full type definitions** for all packages
 
@@ -81,36 +114,49 @@ Multi-line content
 with newlines
 ::
 
-// Objects (bracket)
+// Objects (bracket, nestable to any depth)
 author: {
   name: John Doe
-  email: john@example.com
+  address: {
+    city: Stockholm
+  }
 }
 
 // Objects (dot notation)
 author.name: John Doe
-author.email: john@example.com
+author.address.city: Stockholm
 
 // Arrays
 tags: [
-javascript
-typescript
+  javascript
+  typescript
 ]
 
 // Nested arrays
 matrix: [
-[
-1
-2
-]
-[
-3
-4
-]
+  [
+    1
+    2
+  ]
+  [
+    3
+    4
+  ]
 ]
 
+// Content arrays
+body: [[
+  #heading.large: Welcome
+  A paragraph of text.
+  <#image.hero: banner.jpg
+    alt: A photo
+    width: 1200
+  >
+]]
+
 // Comments
-// This is a comment
+// Line comment
+/* Block comment */
 ```
 
 ### Technical Details
@@ -124,10 +170,9 @@ matrix: [
 ### Known Limitations
 
 - No inline array syntax (e.g., `tags: [tag1, tag2]`)
-- No escape sequences in strings
+- No escape sequences in strings (outside inline content)
 - No null/undefined values
 - No date types
-- No nested objects in objects (objects can contain primitives only)
 - Minimal error reporting (planned for future)
 
 ### Breaking Changes
@@ -141,19 +186,13 @@ N/A - Initial release
 The following features are planned for future releases:
 
 - Error reporting with line numbers
-- Source maps
 - Null/undefined values
 - Date parsing (ISO 8601)
 - Inline array syntax
 - Escape sequences for special characters
-- Nested objects
 - Include directives (import other ADML files)
 - Variables and references
 - Schema validation
-- Custom type plugins
-- ADML-specific syntax highlighting for editor
-- Autocomplete in editor
-- VS Code extension
 
 ---
 

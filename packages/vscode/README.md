@@ -35,14 +35,14 @@ Language support for ADML (Article Data Markup Language) files in Visual Studio 
    npm run package
    ```
 
-   This creates a file called `adml-vscode-0.1.0.vsix` in the `packages/vscode/` folder.
+   This creates a `.vsix` file in the `packages/vscode/` folder.
 
 5. Install the `.vsix` file in VS Code:
 
    - Open VS Code
    - Open the Command Palette: `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux)
    - Type **"Install from VSIX"** and select it
-   - Browse to `packages/vscode/adml-vscode-0.1.0.vsix` and select it
+   - Browse to the `.vsix` file in `packages/vscode/` and select it
    - Restart VS Code when prompted
 
 6. Open any `.adml` file and you should see syntax highlighting.

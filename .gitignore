@@ -142,6 +142,6 @@ vite.config.ts.timestamp-*
 .idea/
 *.swp
 *.swo
-anteckningar
+used_prompts
 packages/.DS_Store
 .DS_Store

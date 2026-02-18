@@ -105,7 +105,7 @@ const editor = new ADMLEditor(document.getElementById('editor'), {
 
 ### React
 ```jsx
-import { ADMLEditorReact } from '@adml/editor';
+import { ADMLEditorReact } from '@adml/editor/react';
 
 function MyComponent() {
   const [value, setValue] = useState('title: Hello World');
